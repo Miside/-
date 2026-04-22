@@ -3,6 +3,19 @@
 import { FormEvent, useState } from "react";
 import type { AnonymousMessage } from "./lib/anonymous-messages";
 
+const text = {
+  anonymousUser: "\u533f\u540d\u7528\u6237",
+  emptyTitle: "\u8fd8\u6ca1\u6709\u7559\u8a00",
+  emptyCopy: "\u7b2c\u4e00\u6761\u533f\u540d\u7559\u8a00\uff0c\u53ef\u4ee5\u7531\u4f60\u6765\u5199\u3002",
+  errorFallback: "\u63d0\u4ea4\u5931\u8d25\uff0c\u8bf7\u7a0d\u540e\u518d\u8bd5\u3002",
+  labelNickname: "\u6635\u79f0\uff0c\u53ef\u9009",
+  labelContent: "\u7559\u8a00",
+  nicknamePlaceholder: "\u4e0d\u586b\u5c31\u662f\u533f\u540d\u7528\u6237",
+  contentPlaceholder: "\u5199\u4e0b\u4e00\u53e5\u60f3\u8bf4\u7684\u8bdd",
+  publishing: "\u53d1\u5e03\u4e2d...",
+  publish: "\u533f\u540d\u53d1\u5e03",
+};
+
 type SubmitState = {
   type: "idle" | "success" | "error";
   message: string;
@@ -54,7 +67,7 @@ export function MessageWall({ initialMessages }: MessageWallProps) {
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.message || "提交失败，请稍后再试。");
+        throw new Error(result.message || text.errorFallback);
       }
 
       setState({ type: "success", message: result.message });
@@ -63,7 +76,7 @@ export function MessageWall({ initialMessages }: MessageWallProps) {
     } catch (error) {
       setState({
         type: "error",
-        message: error instanceof Error ? error.message : "提交失败，请稍后再试。",
+        message: error instanceof Error ? error.message : text.errorFallback,
       });
     } finally {
       setIsSubmitting(false);
@@ -74,23 +87,23 @@ export function MessageWall({ initialMessages }: MessageWallProps) {
     <section className="wall-layout">
       <form className="message-form" onSubmit={handleSubmit}>
         <label>
-          <span>昵称，可选</span>
-          <input name="nickname" type="text" maxLength={24} placeholder="不填就是匿名用户" />
+          <span>{text.labelNickname}</span>
+          <input name="nickname" type="text" maxLength={24} placeholder={text.nicknamePlaceholder} />
         </label>
 
         <label>
-          <span>留言</span>
+          <span>{text.labelContent}</span>
           <textarea
             name="content"
             maxLength={500}
-            placeholder="写下一句想说的话"
+            placeholder={text.contentPlaceholder}
             rows={6}
             required
           />
         </label>
 
         <button className="primary-button form-button" type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "发布中..." : "匿名发布"}
+          {isSubmitting ? text.publishing : text.publish}
         </button>
 
         {state.message ? (
@@ -103,14 +116,14 @@ export function MessageWall({ initialMessages }: MessageWallProps) {
       <div className="public-messages">
         {messages.length === 0 ? (
           <div className="empty-wall">
-            <h2>还没有留言</h2>
-            <p>第一条匿名留言，可以由你来写。</p>
+            <h2>{text.emptyTitle}</h2>
+            <p>{text.emptyCopy}</p>
           </div>
         ) : (
           messages.map((message) => (
             <article className="wall-card" key={message.id}>
               <div className="wall-card-meta">
-                <strong>{message.nickname || "匿名用户"}</strong>
+                <strong>{message.nickname || text.anonymousUser}</strong>
                 <time dateTime={message.created_at}>
                   {new Date(message.created_at).toLocaleString("zh-CN", {
                     dateStyle: "medium",
