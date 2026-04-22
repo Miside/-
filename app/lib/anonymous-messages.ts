@@ -1,11 +1,11 @@
-export type ContactMessageInput = {
-  name: string;
-  email: string;
-  message: string;
+export type AnonymousMessageInput = {
+  nickname: string | null;
+  content: string;
 };
 
-export type ContactMessage = ContactMessageInput & {
+export type AnonymousMessage = AnonymousMessageInput & {
   id: number;
+  is_visible: boolean;
   created_at: string;
 };
 
@@ -28,6 +28,7 @@ async function requestSupabase(path: string, init: RequestInit) {
       Authorization: `Bearer ${serviceRoleKey}`,
       ...init.headers,
     },
+    cache: "no-store",
   });
 
   if (!response.ok) {
@@ -38,8 +39,8 @@ async function requestSupabase(path: string, init: RequestInit) {
   return response;
 }
 
-export async function saveContactMessage(message: ContactMessageInput) {
-  await requestSupabase("/rest/v1/contact_messages", {
+export async function saveAnonymousMessage(message: AnonymousMessageInput) {
+  await requestSupabase("/rest/v1/anonymous_messages", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -49,13 +50,24 @@ export async function saveContactMessage(message: ContactMessageInput) {
   });
 }
 
-export async function getContactMessages() {
+export async function getPublicMessages() {
   const response = await requestSupabase(
-    "/rest/v1/contact_messages?select=id,name,email,message,created_at&order=created_at.desc&limit=50",
+    "/rest/v1/anonymous_messages?select=id,nickname,content,is_visible,created_at&is_visible=eq.true&order=created_at.desc&limit=100",
     {
       method: "GET",
     },
   );
 
-  return (await response.json()) as ContactMessage[];
+  return (await response.json()) as AnonymousMessage[];
+}
+
+export async function getAllMessages() {
+  const response = await requestSupabase(
+    "/rest/v1/anonymous_messages?select=id,nickname,content,is_visible,created_at&order=created_at.desc&limit=100",
+    {
+      method: "GET",
+    },
+  );
+
+  return (await response.json()) as AnonymousMessage[];
 }

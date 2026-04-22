@@ -1,4 +1,4 @@
-import { getContactMessages, isDatabaseConfigured } from "../../lib/contact-messages";
+import { getAllMessages, isDatabaseConfigured } from "../../lib/anonymous-messages";
 
 type MessagesPageProps = {
   searchParams: Promise<{
@@ -44,14 +44,14 @@ export default async function MessagesPage({ searchParams }: MessagesPageProps) 
     );
   }
 
-  const messages = await getContactMessages();
+  const messages = await getAllMessages();
 
   return (
     <main className="page-shell">
       <section className="section">
         <div className="section-heading">
           <p className="section-kicker">留言后台</p>
-          <h1 className="admin-title">最近 50 条联系表单留言</h1>
+          <h1 className="admin-title">最近 100 条匿名留言</h1>
         </div>
 
         <div className="message-list">
@@ -61,8 +61,10 @@ export default async function MessagesPage({ searchParams }: MessagesPageProps) 
             messages.map((message) => (
               <article className="message-card" key={message.id}>
                 <div>
-                  <h2>{message.name}</h2>
-                  <a href={`mailto:${message.email}`}>{message.email}</a>
+                  <h2>{message.nickname || "匿名用户"}</h2>
+                  <span className={message.is_visible ? "status-pill" : "status-pill is-hidden"}>
+                    {message.is_visible ? "公开" : "已隐藏"}
+                  </span>
                 </div>
                 <time dateTime={message.created_at}>
                   {new Date(message.created_at).toLocaleString("zh-CN", {
@@ -70,7 +72,7 @@ export default async function MessagesPage({ searchParams }: MessagesPageProps) 
                     timeStyle: "short",
                   })}
                 </time>
-                <p>{message.message}</p>
+                <p>{message.content}</p>
               </article>
             ))
           )}

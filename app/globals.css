@@ -249,7 +249,7 @@ code {
   font-size: 0.95em;
 }
 
-.contact-form {
+.message-form {
   display: grid;
   gap: 16px;
   padding: 24px;
@@ -258,19 +258,19 @@ code {
   background: rgba(255, 255, 255, 0.68);
 }
 
-.contact-form label {
+.message-form label {
   display: grid;
   gap: 8px;
   color: var(--ink);
   font-weight: 700;
 }
 
-.contact-form span {
+.message-form span {
   font-size: 0.95rem;
 }
 
-.contact-form input,
-.contact-form textarea {
+.message-form input,
+.message-form textarea {
   width: 100%;
   border: 1px solid rgba(31, 31, 26, 0.16);
   border-radius: 14px;
@@ -285,13 +285,13 @@ code {
     background 160ms ease;
 }
 
-.contact-form textarea {
+.message-form textarea {
   resize: vertical;
   min-height: 130px;
 }
 
-.contact-form input:focus,
-.contact-form textarea:focus {
+.message-form input:focus,
+.message-form textarea:focus {
   border-color: rgba(213, 93, 63, 0.7);
   background: #fff;
   box-shadow: 0 0 0 4px rgba(213, 93, 63, 0.12);
@@ -370,6 +370,76 @@ code {
   white-space: pre-wrap;
 }
 
+.anonymous-hero .hero-copy h1 {
+  max-width: 8ch;
+}
+
+.wall-layout {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.8fr) minmax(0, 1.2fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.public-messages {
+  display: grid;
+  gap: 14px;
+}
+
+.wall-card,
+.empty-wall {
+  padding: 22px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.wall-card-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: baseline;
+}
+
+.wall-card-meta strong {
+  color: var(--accent-dark);
+}
+
+.wall-card-meta time {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.wall-card p,
+.empty-wall p {
+  margin: 14px 0 0;
+  color: var(--muted);
+  line-height: 1.8;
+  white-space: pre-wrap;
+}
+
+.empty-wall h2 {
+  margin: 0;
+}
+
+.status-pill {
+  display: inline-flex;
+  width: fit-content;
+  margin-top: 8px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  color: #24572d;
+  background: rgba(56, 102, 65, 0.12);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.status-pill.is-hidden {
+  color: #8f311c;
+  background: rgba(213, 93, 63, 0.12);
+}
+
 .step-list {
   display: grid;
   gap: 14px;
@@ -392,7 +462,8 @@ code {
   .hero,
   .split-layout,
   .card-grid,
-  .cta-strip {
+  .cta-strip,
+  .wall-layout {
     grid-template-columns: 1fr;
     display: grid;
   }
