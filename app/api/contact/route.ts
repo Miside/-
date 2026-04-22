@@ -1,3 +1,5 @@
+import { isDatabaseConfigured, saveContactMessage } from "../../lib/contact-messages";
+
 type ContactPayload = {
   name?: unknown;
   email?: unknown;
@@ -37,13 +39,29 @@ export async function POST(request: Request) {
     name: payload.name.trim(),
     email: payload.email.trim(),
     message: payload.message.trim(),
-    receivedAt: new Date().toISOString(),
   };
 
-  console.log("New contact message:", contact);
+  if (!isDatabaseConfigured()) {
+    console.log("New contact message without database:", contact);
+
+    return Response.json({
+      ok: true,
+      saved: false,
+      message: "留言已收到。数据库还没配置，所以暂时没有保存。",
+    });
+  }
+
+  try {
+    await saveContactMessage(contact);
+  } catch (error) {
+    console.error("Failed to save contact message:", error);
+
+    return Response.json({ message: "留言保存失败，请稍后再试。" }, { status: 500 });
+  }
 
   return Response.json({
     ok: true,
-    message: "留言已收到。现在后端接口已经跑通了！",
+    saved: true,
+    message: "留言已保存到数据库。",
   });
 }

@@ -328,6 +328,48 @@ code {
   background: rgba(213, 93, 63, 0.12);
 }
 
+.admin-title {
+  margin: 0;
+  font-size: clamp(2rem, 4vw, 3.2rem);
+  line-height: 1.05;
+}
+
+.message-list {
+  display: grid;
+  gap: 16px;
+}
+
+.message-card {
+  display: grid;
+  gap: 12px;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.message-card h2 {
+  margin: 0 0 4px;
+  font-size: 1.1rem;
+}
+
+.message-card a {
+  color: var(--accent-dark);
+  font-weight: 700;
+}
+
+.message-card time {
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.message-card p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+
 .step-list {
   display: grid;
   gap: 14px;
