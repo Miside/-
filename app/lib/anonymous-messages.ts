@@ -9,6 +9,22 @@ export type AnonymousMessage = AnonymousMessageInput & {
   created_at: string;
 };
 
+export type AnonymousCommentInput = {
+  message_id: number;
+  nickname: string | null;
+  content: string;
+};
+
+export type AnonymousComment = AnonymousCommentInput & {
+  id: number;
+  is_visible: boolean;
+  created_at: string;
+};
+
+export type AnonymousMessageWithComments = AnonymousMessage & {
+  comments: AnonymousComment[];
+};
+
 const supabaseUrl = process.env.SUPABASE_URL?.replace(/\/$/, "");
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -50,6 +66,17 @@ export async function saveAnonymousMessage(message: AnonymousMessageInput) {
   });
 }
 
+export async function saveAnonymousComment(comment: AnonymousCommentInput) {
+  await requestSupabase("/rest/v1/anonymous_comments", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Prefer: "return=minimal",
+    },
+    body: JSON.stringify(comment),
+  });
+}
+
 export async function getPublicMessages() {
   const response = await requestSupabase(
     "/rest/v1/anonymous_messages?select=id,nickname,content,is_visible,created_at&is_visible=eq.true&order=created_at.desc&limit=100",
@@ -59,6 +86,28 @@ export async function getPublicMessages() {
   );
 
   return (await response.json()) as AnonymousMessage[];
+}
+
+export async function getPublicMessagesWithComments() {
+  const messages = await getPublicMessages();
+
+  if (messages.length === 0) {
+    return [] as AnonymousMessageWithComments[];
+  }
+
+  const ids = messages.map((message) => message.id).join(",");
+  const response = await requestSupabase(
+    `/rest/v1/anonymous_comments?select=id,message_id,nickname,content,is_visible,created_at&is_visible=eq.true&message_id=in.(${ids})&order=created_at.asc`,
+    {
+      method: "GET",
+    },
+  );
+  const comments = (await response.json()) as AnonymousComment[];
+
+  return messages.map((message) => ({
+    ...message,
+    comments: comments.filter((comment) => comment.message_id === message.id),
+  }));
 }
 
 export async function getAllMessages() {

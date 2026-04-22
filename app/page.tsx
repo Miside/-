@@ -1,4 +1,4 @@
-import { getPublicMessages, isDatabaseConfigured } from "./lib/anonymous-messages";
+import { getPublicMessagesWithComments, isDatabaseConfigured } from "./lib/anonymous-messages";
 import { MessageWall } from "./message-wall";
 
 export const dynamic = "force-dynamic";
@@ -56,7 +56,7 @@ async function loadMessages() {
   }
 
   try {
-    return await getPublicMessages();
+    return await getPublicMessagesWithComments();
   } catch (error) {
     console.error("Failed to load messages for homepage:", error);
     return [];
