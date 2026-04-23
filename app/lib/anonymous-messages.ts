@@ -1,3 +1,5 @@
+import { containsLikelyChinesePersonalName } from "./name-safety";
+
 export type AnonymousMessageInput = {
   nickname: string | null;
   content: string;
@@ -262,10 +264,21 @@ export async function getPublicMessagesWithComments() {
   );
   const comments = (await response.json()) as PublicAnonymousComment[];
 
-  const messagesWithComments = messages.map((message) => ({
-    ...message,
-    comments: comments.filter((comment) => comment.message_id === message.id),
-  }));
+  const messagesWithComments = messages
+    .filter(
+      (message) =>
+        !containsLikelyChinesePersonalName(message.content) &&
+        !containsLikelyChinesePersonalName(message.nickname),
+    )
+    .map((message) => ({
+      ...message,
+      comments: comments.filter(
+        (comment) =>
+          comment.message_id === message.id &&
+          !containsLikelyChinesePersonalName(comment.content) &&
+          !containsLikelyChinesePersonalName(comment.nickname),
+      ),
+    }));
 
   if (!settings.force_anonymous) {
     return messagesWithComments;

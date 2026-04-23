@@ -13,6 +13,7 @@ import {
 import { hasAdminCookieValue, isAdminToken } from "../../lib/admin-auth";
 import { parseClientDetails } from "../../lib/client-details";
 import { containsBlockedKeyword, detectUnsafeContent, parseKeywords } from "../../lib/content-filter";
+import { containsLikelyChinesePersonalName } from "../../lib/name-safety";
 
 const text = {
   adminDisabled: "\u540e\u53f0\u672a\u542f\u7528",
@@ -269,10 +270,6 @@ async function hideBlockedContent(
   messages: Awaited<ReturnType<typeof getAllMessagesWithComments>>,
   blockedKeywords: string[],
 ) {
-  if (blockedKeywords.length === 0) {
-    return messages;
-  }
-
   await Promise.all(
     messages.flatMap((message) => {
       const tasks: Promise<void>[] = [];
@@ -280,7 +277,9 @@ async function hideBlockedContent(
         containsBlockedKeyword(message.content, blockedKeywords) ||
         containsBlockedKeyword(message.nickname || "", blockedKeywords) ||
         detectUnsafeContent(message.content, blockedKeywords).unsafe ||
-        detectUnsafeContent(message.nickname || "", blockedKeywords).unsafe;
+        detectUnsafeContent(message.nickname || "", blockedKeywords).unsafe ||
+        containsLikelyChinesePersonalName(message.content) ||
+        containsLikelyChinesePersonalName(message.nickname);
 
       if (message.is_visible && messageMatches) {
         tasks.push(setMessageVisibility(message.id, false));
@@ -292,7 +291,9 @@ async function hideBlockedContent(
           containsBlockedKeyword(comment.content, blockedKeywords) ||
           containsBlockedKeyword(comment.nickname || "", blockedKeywords) ||
           detectUnsafeContent(comment.content, blockedKeywords).unsafe ||
-          detectUnsafeContent(comment.nickname || "", blockedKeywords).unsafe;
+          detectUnsafeContent(comment.nickname || "", blockedKeywords).unsafe ||
+          containsLikelyChinesePersonalName(comment.content) ||
+          containsLikelyChinesePersonalName(comment.nickname);
 
         if (comment.is_visible && commentMatches) {
           tasks.push(setCommentVisibility(comment.id, false));

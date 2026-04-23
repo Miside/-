@@ -138,3 +138,25 @@ export function isLikelyChinesePersonalName(value: string | null) {
 
   return commonChineseSurnames.has(nickname[0]) && nickname.length >= 2 && nickname.length <= 3;
 }
+
+export function containsLikelyChinesePersonalName(value: string | null) {
+  if (!value) {
+    return false;
+  }
+
+  const cjkRuns = value.match(/[\u4e00-\u9fff]{2,12}/g) || [];
+
+  return cjkRuns.some((run) => {
+    for (let start = 0; start < run.length; start += 1) {
+      for (let length = 2; length <= 4; length += 1) {
+        const candidate = run.slice(start, start + length);
+
+        if (candidate.length === length && isLikelyChinesePersonalName(candidate)) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  });
+}
