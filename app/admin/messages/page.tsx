@@ -1,9 +1,13 @@
 import { ActionForm } from "./action-form";
+import { KeywordsForm } from "./keywords-form";
 import {
   getAllMessagesWithComments,
   getSiteSettings,
   isDatabaseConfigured,
+  setCommentVisibility,
+  setMessageVisibility,
 } from "../../lib/anonymous-messages";
+import { containsBlockedKeyword, detectUnsafeContent, parseKeywords } from "../../lib/content-filter";
 
 const text = {
   adminDisabled: "\u540e\u53f0\u672a\u542f\u7528",
@@ -35,6 +39,8 @@ const text = {
   adminAccess: "\u672c\u673a\u8c03\u8bd5\u5165\u53e3",
   adminAccessCopy: "\u7ef4\u62a4\u6a21\u5f0f\u4e0b\uff0c\u666e\u901a\u8bbf\u5ba2\u770b\u4e0d\u5230\u7559\u8a00\u5899\uff1b\u4f60\u5728\u672c\u673a\u6253\u5f00\u8fd9\u4e2a\u5165\u53e3\u540e\u53ef\u4ee5\u7ee7\u7eed\u8c03\u8bd5\u524d\u53f0\u3002",
   openAdminAccess: "\u6253\u5f00\u672c\u673a\u8c03\u8bd5",
+  keywordFilter: "\u5173\u952e\u8bcd\u8fc7\u6ee4",
+  keywordFilterCopy: "\u547d\u4e2d\u5173\u952e\u8bcd\u7684\u65b0\u5185\u5bb9\u4f1a\u88ab\u62d2\u7edd\uff1b\u5df2\u53d1\u5e03\u7684\u547d\u4e2d\u5185\u5bb9\u4f1a\u81ea\u52a8\u9690\u85cf\u3002",
   ip: "IP",
   userAgent: "\u8bbe\u5907",
 };
@@ -83,7 +89,8 @@ export default async function MessagesPage({ searchParams }: MessagesPageProps) 
     );
   }
 
-  const [messages, settings] = await Promise.all([getAllMessagesWithComments(), getSiteSettings()]);
+  const [rawMessages, settings] = await Promise.all([getAllMessagesWithComments(), getSiteSettings()]);
+  const messages = await hideBlockedContent(rawMessages, parseKeywords(settings.blocked_keywords));
 
   return (
     <main className="page-shell">
@@ -129,6 +136,14 @@ export default async function MessagesPage({ searchParams }: MessagesPageProps) 
           <a className="admin-action-button" href={`/api/admin/access?token=${encodeURIComponent(params.token || "")}`}>
             {text.openAdminAccess}
           </a>
+        </div>
+
+        <div className="admin-setting-panel is-stacked">
+          <div>
+            <h2>{text.keywordFilter}</h2>
+            <p>{text.keywordFilterCopy}</p>
+          </div>
+          <KeywordsForm keywords={settings.blocked_keywords || ""} token={params.token || ""} />
         </div>
 
         <div className="message-list">
@@ -216,4 +231,46 @@ export default async function MessagesPage({ searchParams }: MessagesPageProps) 
       </section>
     </main>
   );
+}
+
+async function hideBlockedContent(
+  messages: Awaited<ReturnType<typeof getAllMessagesWithComments>>,
+  blockedKeywords: string[],
+) {
+  if (blockedKeywords.length === 0) {
+    return messages;
+  }
+
+  await Promise.all(
+    messages.flatMap((message) => {
+      const tasks: Promise<void>[] = [];
+      const messageMatches =
+        containsBlockedKeyword(message.content, blockedKeywords) ||
+        containsBlockedKeyword(message.nickname || "", blockedKeywords) ||
+        detectUnsafeContent(message.content, blockedKeywords).unsafe ||
+        detectUnsafeContent(message.nickname || "", blockedKeywords).unsafe;
+
+      if (message.is_visible && messageMatches) {
+        tasks.push(setMessageVisibility(message.id, false));
+        message.is_visible = false;
+      }
+
+      for (const comment of message.comments) {
+        const commentMatches =
+          containsBlockedKeyword(comment.content, blockedKeywords) ||
+          containsBlockedKeyword(comment.nickname || "", blockedKeywords) ||
+          detectUnsafeContent(comment.content, blockedKeywords).unsafe ||
+          detectUnsafeContent(comment.nickname || "", blockedKeywords).unsafe;
+
+        if (comment.is_visible && commentMatches) {
+          tasks.push(setCommentVisibility(comment.id, false));
+          comment.is_visible = false;
+        }
+      }
+
+      return tasks;
+    }),
+  );
+
+  return messages;
 }

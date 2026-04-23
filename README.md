@@ -65,12 +65,14 @@ alter table public.anonymous_comments
 
 create table if not exists public.site_settings (
   id integer primary key default 1,
+  blocked_keywords text,
   force_anonymous boolean not null default false,
   maintenance_mode boolean not null default false,
   updated_at timestamptz not null default now()
 );
 
 alter table public.site_settings
+  add column if not exists blocked_keywords text,
   add column if not exists maintenance_mode boolean not null default false;
 
 insert into public.site_settings (id, force_anonymous)

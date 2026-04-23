@@ -417,6 +417,26 @@ code {
   line-height: 1.6;
 }
 
+.admin-setting-panel.is-stacked {
+  display: grid;
+}
+
+.keywords-form {
+  display: grid;
+  gap: 10px;
+}
+
+.keywords-form textarea {
+  width: 100%;
+  border: 1px solid rgba(31, 31, 26, 0.14);
+  border-radius: 12px;
+  padding: 12px;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.72);
+  font: inherit;
+  resize: vertical;
+}
+
 .admin-meta-list {
   display: grid;
   gap: 8px;

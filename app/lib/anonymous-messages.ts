@@ -30,6 +30,7 @@ export type AnonymousMessageWithComments = AnonymousMessage & {
 };
 
 export type SiteSettings = {
+  blocked_keywords: string | null;
   force_anonymous: boolean;
   maintenance_mode: boolean;
 };
@@ -95,17 +96,17 @@ export async function saveAnonymousComment(comment: AnonymousCommentInput) {
 export async function getSiteSettings(): Promise<SiteSettings> {
   try {
     const response = await requestSupabase(
-      "/rest/v1/site_settings?select=force_anonymous,maintenance_mode&id=eq.1&limit=1",
+      "/rest/v1/site_settings?select=blocked_keywords,force_anonymous,maintenance_mode&id=eq.1&limit=1",
       {
         method: "GET",
       },
     );
     const rows = (await response.json()) as SiteSettings[];
 
-    return rows[0] || { force_anonymous: false, maintenance_mode: false };
+    return rows[0] || { blocked_keywords: "", force_anonymous: false, maintenance_mode: false };
   } catch (error) {
     console.error("Failed to load site settings:", error);
-    return { force_anonymous: false, maintenance_mode: false };
+    return { blocked_keywords: "", force_anonymous: false, maintenance_mode: false };
   }
 }
 
@@ -120,6 +121,7 @@ export async function updateForceAnonymous(forceAnonymous: boolean) {
     },
     body: JSON.stringify({
       id: 1,
+      blocked_keywords: settings.blocked_keywords || "",
       force_anonymous: forceAnonymous,
       maintenance_mode: settings.maintenance_mode,
     }),
@@ -137,8 +139,27 @@ export async function updateMaintenanceMode(maintenanceMode: boolean) {
     },
     body: JSON.stringify({
       id: 1,
+      blocked_keywords: settings.blocked_keywords || "",
       force_anonymous: settings.force_anonymous,
       maintenance_mode: maintenanceMode,
+    }),
+  });
+}
+
+export async function updateBlockedKeywords(blockedKeywords: string) {
+  const settings = await getSiteSettings();
+
+  await requestSupabase("/rest/v1/site_settings?on_conflict=id", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Prefer: "resolution=merge-duplicates,return=minimal",
+    },
+    body: JSON.stringify({
+      id: 1,
+      blocked_keywords: blockedKeywords,
+      force_anonymous: settings.force_anonymous,
+      maintenance_mode: settings.maintenance_mode,
     }),
   });
 }

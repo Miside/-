@@ -2,12 +2,14 @@ import { redirect } from "next/navigation";
 import {
   setCommentVisibility,
   setMessageVisibility,
+  updateBlockedKeywords,
   updateForceAnonymous,
   updateMaintenanceMode,
 } from "../../../lib/anonymous-messages";
 
 type AdminActionType =
   | "anonymous-mode"
+  | "blocked-keywords"
   | "comment-visibility"
   | "maintenance"
   | "message-visibility";
@@ -48,6 +50,11 @@ export async function POST(request: Request) {
 
   if (actionType === "anonymous-mode") {
     await updateForceAnonymous(value);
+    redirectToAdmin(tokenString);
+  }
+
+  if (actionType === "blocked-keywords") {
+    await updateBlockedKeywords(String(formData.get("blockedKeywords") || ""));
     redirectToAdmin(tokenString);
   }
 
