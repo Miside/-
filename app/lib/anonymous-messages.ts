@@ -95,7 +95,7 @@ export async function saveAnonymousComment(comment: AnonymousCommentInput) {
 export async function getSiteSettings(): Promise<SiteSettings> {
   try {
     const response = await requestSupabase(
-      "/rest/v1/site_settings?select=force_anonymous&id=eq.1&limit=1",
+      "/rest/v1/site_settings?select=force_anonymous,maintenance_mode&id=eq.1&limit=1",
       {
         method: "GET",
       },
@@ -110,7 +110,9 @@ export async function getSiteSettings(): Promise<SiteSettings> {
 }
 
 export async function updateForceAnonymous(forceAnonymous: boolean) {
-  await requestSupabase("/rest/v1/site_settings", {
+  const settings = await getSiteSettings();
+
+  await requestSupabase("/rest/v1/site_settings?on_conflict=id", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -119,12 +121,15 @@ export async function updateForceAnonymous(forceAnonymous: boolean) {
     body: JSON.stringify({
       id: 1,
       force_anonymous: forceAnonymous,
+      maintenance_mode: settings.maintenance_mode,
     }),
   });
 }
 
 export async function updateMaintenanceMode(maintenanceMode: boolean) {
-  await requestSupabase("/rest/v1/site_settings", {
+  const settings = await getSiteSettings();
+
+  await requestSupabase("/rest/v1/site_settings?on_conflict=id", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -132,6 +137,7 @@ export async function updateMaintenanceMode(maintenanceMode: boolean) {
     },
     body: JSON.stringify({
       id: 1,
+      force_anonymous: settings.force_anonymous,
       maintenance_mode: maintenanceMode,
     }),
   });
