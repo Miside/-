@@ -1,4 +1,3 @@
-import { redirect } from "next/navigation";
 import { NextResponse } from "next/server";
 import {
   setCommentVisibility,
@@ -35,13 +34,20 @@ function parseBoolean(value: FormDataEntryValue | null) {
   return value === "true";
 }
 
-function redirectToAdmin(token: string) {
-  redirect(`/admin/messages?token=${encodeURIComponent(token)}`);
+function redirectToAdmin(request: Request, token: string) {
+  return NextResponse.redirect(
+    new URL(`/admin/messages?token=${encodeURIComponent(token)}`, request.url),
+    303,
+  );
 }
 
-function redirectToAdminWithError(token: string, message: string) {
-  redirect(
-    `/admin/messages?token=${encodeURIComponent(token)}&error=${encodeURIComponent(message)}`,
+function redirectToAdminWithError(request: Request, token: string, message: string) {
+  return NextResponse.redirect(
+    new URL(
+      `/admin/messages?token=${encodeURIComponent(token)}&error=${encodeURIComponent(message)}`,
+      request.url,
+    ),
+    303,
   );
 }
 
@@ -71,32 +77,32 @@ export async function POST(request: Request) {
   try {
     if (actionType === "anonymous-mode") {
       await updateForceAnonymous(value);
-      redirectToAdmin(tokenString);
+      return redirectToAdmin(request, tokenString);
     }
 
     if (actionType === "blocked-keywords") {
       await updateBlockedKeywords(String(formData.get("blockedKeywords") || ""));
-      redirectToAdmin(tokenString);
+      return redirectToAdmin(request, tokenString);
     }
 
     if (actionType === "maintenance") {
       await updateMaintenanceMode(value);
-      redirectToAdmin(tokenString);
+      return redirectToAdmin(request, tokenString);
     }
 
     if (actionType === "message-visibility") {
       await setMessageVisibility(parseId(formData.get("id")), value);
-      redirectToAdmin(tokenString);
+      return redirectToAdmin(request, tokenString);
     }
 
     if (actionType === "comment-visibility") {
       await setCommentVisibility(parseId(formData.get("id")), value);
-      redirectToAdmin(tokenString);
+      return redirectToAdmin(request, tokenString);
     }
 
-    redirectToAdminWithError(tokenString, "Invalid admin action.");
+    return redirectToAdminWithError(request, tokenString, "Invalid admin action.");
   } catch (error) {
     const message = error instanceof Error ? error.message : "Admin action failed.";
-    redirectToAdminWithError(tokenString, message);
+    return redirectToAdminWithError(request, tokenString, message);
   }
 }
