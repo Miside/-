@@ -1,4 +1,5 @@
 import { ActionForm } from "./action-form";
+import { AdminAutoRefresh } from "./admin-auto-refresh";
 import { KeywordsForm } from "./keywords-form";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
@@ -46,8 +47,12 @@ const text = {
   disableModeration: "\u5173\u95ed\u5ba1\u6838",
   keywordFilter: "\u5173\u952e\u8bcd\u8fc7\u6ee4",
   keywordFilterCopy: "\u547d\u4e2d\u5173\u952e\u8bcd\u7684\u65b0\u5185\u5bb9\u4f1a\u88ab\u62d2\u7edd\uff1b\u5df2\u53d1\u5e03\u7684\u547d\u4e2d\u5185\u5bb9\u4f1a\u81ea\u52a8\u9690\u85cf\u3002",
+  id: "ID",
   ip: "IP",
-  userAgent: "\u8bbe\u5907",
+  browser: "\u6d4f\u89c8\u5668",
+  os: "\u7cfb\u7edf",
+  device: "\u8bbe\u5907",
+  userAgent: "\u8bbe\u5907\u539f\u6587",
 };
 
 type MessagesPageProps = {
@@ -119,6 +124,7 @@ export default async function MessagesPage({ searchParams }: MessagesPageProps) 
 
   return (
     <main className="page-shell">
+      <AdminAutoRefresh />
       <section className="section">
         <div className="section-heading">
           <p className="section-kicker">{text.admin}</p>
@@ -201,13 +207,10 @@ export default async function MessagesPage({ searchParams }: MessagesPageProps) 
                 </time>
                 <dl className="admin-meta-list">
                   <div>
-                    <dt>{text.ip}</dt>
-                    <dd>{message.ip_address || "-"}</dd>
+                    <dt>{text.id}</dt>
+                    <dd>{message.id}</dd>
                   </div>
-                  <div>
-                    <dt>{text.userAgent}</dt>
-                    <dd>{message.user_agent || "-"}</dd>
-                  </div>
+                  <ClientMeta ipAddress={message.ip_address} userAgent={message.user_agent} />
                 </dl>
                 <p>{message.content}</p>
                 <div className="admin-comments">
@@ -238,13 +241,10 @@ export default async function MessagesPage({ searchParams }: MessagesPageProps) 
                       </time>
                       <dl className="admin-meta-list">
                         <div>
-                          <dt>{text.ip}</dt>
-                          <dd>{comment.ip_address || "-"}</dd>
+                          <dt>{text.id}</dt>
+                          <dd>{comment.id}</dd>
                         </div>
-                        <div>
-                          <dt>{text.userAgent}</dt>
-                          <dd>{comment.user_agent || "-"}</dd>
-                        </div>
+                        <ClientMeta ipAddress={comment.ip_address} userAgent={comment.user_agent} />
                       </dl>
                       <p>{comment.content}</p>
                     </div>
@@ -299,4 +299,119 @@ async function hideBlockedContent(
   );
 
   return messages;
+}
+
+function ClientMeta({
+  ipAddress,
+  userAgent,
+}: {
+  ipAddress: string | null;
+  userAgent: string | null;
+}) {
+  const details = parseUserAgent(userAgent);
+
+  return (
+    <>
+      <div>
+        <dt>{text.ip}</dt>
+        <dd>{ipAddress || "-"}</dd>
+      </div>
+      <div>
+        <dt>{text.browser}</dt>
+        <dd>{details.browser}</dd>
+      </div>
+      <div>
+        <dt>{text.os}</dt>
+        <dd>{details.os}</dd>
+      </div>
+      <div>
+        <dt>{text.device}</dt>
+        <dd>{details.device}</dd>
+      </div>
+      <div>
+        <dt>{text.userAgent}</dt>
+        <dd>{userAgent || "-"}</dd>
+      </div>
+    </>
+  );
+}
+
+function parseUserAgent(userAgent: string | null) {
+  if (!userAgent) {
+    return {
+      browser: "-",
+      device: "-",
+      os: "-",
+    };
+  }
+
+  return {
+    browser: detectBrowser(userAgent),
+    device: detectDevice(userAgent),
+    os: detectOperatingSystem(userAgent),
+  };
+}
+
+function detectBrowser(userAgent: string) {
+  if (/Edg\//.test(userAgent)) {
+    return "Microsoft Edge";
+  }
+
+  if (/OPR\//.test(userAgent)) {
+    return "Opera";
+  }
+
+  if (/Chrome\//.test(userAgent) && !/Chromium\//.test(userAgent)) {
+    return "Chrome";
+  }
+
+  if (/Firefox\//.test(userAgent)) {
+    return "Firefox";
+  }
+
+  if (/Safari\//.test(userAgent) && /Version\//.test(userAgent)) {
+    return "Safari";
+  }
+
+  return "未知浏览器";
+}
+
+function detectDevice(userAgent: string) {
+  if (/iPad|Tablet/i.test(userAgent)) {
+    return "平板";
+  }
+
+  if (/Mobile|Android|iPhone|iPod/i.test(userAgent)) {
+    return "手机";
+  }
+
+  return "电脑";
+}
+
+function detectOperatingSystem(userAgent: string) {
+  if (/Windows NT 10/.test(userAgent)) {
+    return "Windows 10/11";
+  }
+
+  if (/Windows NT/.test(userAgent)) {
+    return "Windows";
+  }
+
+  if (/Android/.test(userAgent)) {
+    return "Android";
+  }
+
+  if (/iPhone|iPad|iPod/.test(userAgent)) {
+    return "iOS/iPadOS";
+  }
+
+  if (/Mac OS X/.test(userAgent)) {
+    return "macOS";
+  }
+
+  if (/Linux/.test(userAgent)) {
+    return "Linux";
+  }
+
+  return "未知系统";
 }

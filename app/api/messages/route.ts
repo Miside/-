@@ -20,7 +20,8 @@ const messages = {
   unsafe: "\u5185\u5bb9\u53ef\u80fd\u5305\u542b\u8d1f\u9762\u3001\u8fb1\u9a82\u6216\u653b\u51fb\u6027\u8868\u8fbe\uff0c\u4e0d\u80fd\u53d1\u5e03\u3002",
   loadFailed: "\u7559\u8a00\u52a0\u8f7d\u5931\u8d25\u3002",
   saveFailed: "\u7559\u8a00\u4fdd\u5b58\u5931\u8d25\uff0c\u8bf7\u7a0d\u540e\u518d\u8bd5\u3002",
-  saved: "\u7559\u8a00\u5df2\u63d0\u4ea4\uff0c\u7b49\u5f85\u7ad9\u957f\u5ba1\u6838\u3002",
+  savedPublic: "\u7559\u8a00\u5df2\u53d1\u5e03\u3002",
+  savedPending: "\u7559\u8a00\u5df2\u63d0\u4ea4\uff0c\u7b49\u5f85\u7ad9\u957f\u5ba1\u6838\u3002",
 };
 
 type MessagePayload = {
@@ -123,7 +124,7 @@ export async function POST(request: Request) {
 
   return Response.json({
     ok: true,
-    message: messages.saved,
+    message: settings.moderation_enabled ? messages.savedPending : messages.savedPublic,
   });
 }
 
