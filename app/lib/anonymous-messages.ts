@@ -1,6 +1,8 @@
 export type AnonymousMessageInput = {
   nickname: string | null;
   content: string;
+  ip_address: string | null;
+  user_agent: string | null;
 };
 
 export type AnonymousMessage = AnonymousMessageInput & {
@@ -13,6 +15,8 @@ export type AnonymousCommentInput = {
   message_id: number;
   nickname: string | null;
   content: string;
+  ip_address: string | null;
+  user_agent: string | null;
 };
 
 export type AnonymousComment = AnonymousCommentInput & {
@@ -27,6 +31,7 @@ export type AnonymousMessageWithComments = AnonymousMessage & {
 
 export type SiteSettings = {
   force_anonymous: boolean;
+  maintenance_mode: boolean;
 };
 
 const supabaseUrl = process.env.SUPABASE_URL?.replace(/\/$/, "");
@@ -66,7 +71,10 @@ export async function saveAnonymousMessage(message: AnonymousMessageInput) {
       "Content-Type": "application/json",
       Prefer: "return=minimal",
     },
-    body: JSON.stringify(message),
+    body: JSON.stringify({
+      ...message,
+      is_visible: false,
+    }),
   });
 }
 
@@ -77,7 +85,10 @@ export async function saveAnonymousComment(comment: AnonymousCommentInput) {
       "Content-Type": "application/json",
       Prefer: "return=minimal",
     },
-    body: JSON.stringify(comment),
+    body: JSON.stringify({
+      ...comment,
+      is_visible: false,
+    }),
   });
 }
 
@@ -91,10 +102,10 @@ export async function getSiteSettings(): Promise<SiteSettings> {
     );
     const rows = (await response.json()) as SiteSettings[];
 
-    return rows[0] || { force_anonymous: false };
+    return rows[0] || { force_anonymous: false, maintenance_mode: false };
   } catch (error) {
     console.error("Failed to load site settings:", error);
-    return { force_anonymous: false };
+    return { force_anonymous: false, maintenance_mode: false };
   }
 }
 
@@ -112,9 +123,23 @@ export async function updateForceAnonymous(forceAnonymous: boolean) {
   });
 }
 
+export async function updateMaintenanceMode(maintenanceMode: boolean) {
+  await requestSupabase("/rest/v1/site_settings", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Prefer: "resolution=merge-duplicates,return=minimal",
+    },
+    body: JSON.stringify({
+      id: 1,
+      maintenance_mode: maintenanceMode,
+    }),
+  });
+}
+
 export async function getPublicMessages() {
   const response = await requestSupabase(
-    "/rest/v1/anonymous_messages?select=id,nickname,content,is_visible,created_at&is_visible=eq.true&order=created_at.desc&limit=100",
+    "/rest/v1/anonymous_messages?select=id,nickname,content,is_visible,ip_address,user_agent,created_at&is_visible=eq.true&order=created_at.desc&limit=100",
     {
       method: "GET",
     },
@@ -132,7 +157,7 @@ export async function getPublicMessagesWithComments() {
 
   const ids = messages.map((message) => message.id).join(",");
   const response = await requestSupabase(
-    `/rest/v1/anonymous_comments?select=id,message_id,nickname,content,is_visible,created_at&is_visible=eq.true&message_id=in.(${ids})&order=created_at.asc`,
+    `/rest/v1/anonymous_comments?select=id,message_id,nickname,content,is_visible,ip_address,user_agent,created_at&is_visible=eq.true&message_id=in.(${ids})&order=created_at.asc`,
     {
       method: "GET",
     },
@@ -160,7 +185,7 @@ export async function getPublicMessagesWithComments() {
 
 export async function getAllMessages() {
   const response = await requestSupabase(
-    "/rest/v1/anonymous_messages?select=id,nickname,content,is_visible,created_at&order=created_at.desc&limit=100",
+    "/rest/v1/anonymous_messages?select=id,nickname,content,is_visible,ip_address,user_agent,created_at&order=created_at.desc&limit=100",
     {
       method: "GET",
     },
@@ -171,7 +196,7 @@ export async function getAllMessages() {
 
 export async function getAllComments() {
   const response = await requestSupabase(
-    "/rest/v1/anonymous_comments?select=id,message_id,nickname,content,is_visible,created_at&order=created_at.asc&limit=500",
+    "/rest/v1/anonymous_comments?select=id,message_id,nickname,content,is_visible,ip_address,user_agent,created_at&order=created_at.asc&limit=500",
     {
       method: "GET",
     },

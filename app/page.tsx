@@ -1,10 +1,33 @@
-import { getPublicMessagesWithComments, isDatabaseConfigured } from "./lib/anonymous-messages";
+import {
+  getPublicMessagesWithComments,
+  getSiteSettings,
+  isDatabaseConfigured,
+} from "./lib/anonymous-messages";
 import { MessageWall } from "./message-wall";
 
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const messages = await loadMessages();
+  const settings = isDatabaseConfigured()
+    ? await getSiteSettings()
+    : { force_anonymous: false, maintenance_mode: false };
+  const messages = settings.maintenance_mode ? [] : await loadMessages();
+
+  if (settings.maintenance_mode) {
+    return (
+      <main className="page-shell">
+        <section className="hero anonymous-hero">
+          <div className="hero-copy">
+            <p className="eyebrow">Maintenance</p>
+            <h1>{"\u7f51\u7ad9\u7ef4\u62a4\u4e2d"}</h1>
+            <p className="lede">
+              {"\u7559\u8a00\u5899\u6682\u65f6\u5173\u95ed\uff0c\u7ad9\u957f\u6b63\u5728\u8c03\u6574\u5b89\u5168\u548c\u5ba1\u6838\u8bbe\u7f6e\u3002"}
+            </p>
+          </div>
+        </section>
+      </main>
+    );
+  }
 
   return (
     <main className="page-shell">

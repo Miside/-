@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import {
   setCommentVisibility,
   setMessageVisibility,
+  updateMaintenanceMode,
   updateForceAnonymous,
 } from "../lib/anonymous-messages";
 
@@ -30,6 +31,13 @@ export async function updateCommentVisibility(id: number, isVisible: boolean, to
 export async function updateAnonymousMode(forceAnonymous: boolean, token: string) {
   assertAdmin(token);
   await updateForceAnonymous(forceAnonymous);
+  revalidatePath("/admin/messages");
+  revalidatePath("/");
+}
+
+export async function updateMaintenance(maintenanceMode: boolean, token: string) {
+  assertAdmin(token);
+  await updateMaintenanceMode(maintenanceMode);
   revalidatePath("/admin/messages");
   revalidatePath("/");
 }

@@ -1,4 +1,9 @@
-import { updateAnonymousMode, updateCommentVisibility, updateMessageVisibility } from "../actions";
+import {
+  updateAnonymousMode,
+  updateCommentVisibility,
+  updateMaintenance,
+  updateMessageVisibility,
+} from "../actions";
 import { VisibilityButton } from "./visibility-button";
 import {
   getAllMessagesWithComments,
@@ -28,6 +33,13 @@ const text = {
   anonymousModeOff: "\u5df2\u5173\u95ed\uff1a\u9996\u9875\u6b63\u5e38\u663e\u793a\u6635\u79f0",
   enableAnonymous: "\u5f00\u542f\u5168\u7ad9\u533f\u540d",
   disableAnonymous: "\u5173\u95ed\u5168\u7ad9\u533f\u540d",
+  maintenanceMode: "\u7ef4\u62a4\u6a21\u5f0f",
+  maintenanceOn: "\u5df2\u5f00\u542f\uff1a\u524d\u53f0\u53ea\u663e\u793a\u7ef4\u62a4\u9875\uff0c\u7528\u6237\u4e0d\u80fd\u53d1\u5e03",
+  maintenanceOff: "\u5df2\u5173\u95ed\uff1a\u524d\u53f0\u6b63\u5e38\u8bbf\u95ee",
+  enableMaintenance: "\u5f00\u542f\u7ef4\u62a4",
+  disableMaintenance: "\u5173\u95ed\u7ef4\u62a4",
+  ip: "IP",
+  userAgent: "\u8bbe\u5907",
 };
 
 type MessagesPageProps = {
@@ -100,6 +112,22 @@ export default async function MessagesPage({ searchParams }: MessagesPageProps) 
           />
         </div>
 
+        <div className="admin-setting-panel">
+          <div>
+            <h2>{text.maintenanceMode}</h2>
+            <p>{settings.maintenance_mode ? text.maintenanceOn : text.maintenanceOff}</p>
+          </div>
+          <VisibilityButton
+            action={async () => {
+              "use server";
+              await updateMaintenance(!settings.maintenance_mode, params.token || "");
+            }}
+            hiddenLabel={text.disableMaintenance}
+            isVisible={settings.maintenance_mode}
+            visibleLabel={text.enableMaintenance}
+          />
+        </div>
+
         <div className="message-list">
           {messages.length === 0 ? (
             <p className="body-copy">{text.empty}</p>
@@ -127,6 +155,16 @@ export default async function MessagesPage({ searchParams }: MessagesPageProps) 
                     timeStyle: "short",
                   })}
                 </time>
+                <dl className="admin-meta-list">
+                  <div>
+                    <dt>{text.ip}</dt>
+                    <dd>{message.ip_address || "-"}</dd>
+                  </div>
+                  <div>
+                    <dt>{text.userAgent}</dt>
+                    <dd>{message.user_agent || "-"}</dd>
+                  </div>
+                </dl>
                 <p>{message.content}</p>
                 <div className="admin-comments">
                   <h3>
@@ -156,6 +194,16 @@ export default async function MessagesPage({ searchParams }: MessagesPageProps) 
                           timeStyle: "short",
                         })}
                       </time>
+                      <dl className="admin-meta-list">
+                        <div>
+                          <dt>{text.ip}</dt>
+                          <dd>{comment.ip_address || "-"}</dd>
+                        </div>
+                        <div>
+                          <dt>{text.userAgent}</dt>
+                          <dd>{comment.user_agent || "-"}</dd>
+                        </div>
+                      </dl>
                       <p>{comment.content}</p>
                     </div>
                   ))}
