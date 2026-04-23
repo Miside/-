@@ -346,6 +346,12 @@ code {
   margin: -8px 0 18px;
 }
 
+.admin-button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
 .message-card {
   display: grid;
   gap: 12px;

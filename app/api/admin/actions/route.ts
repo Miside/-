@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { hasAdminAccessFromCookieHeader } from "../../../lib/admin-auth";
 import {
+  deleteComment,
+  deleteMessage,
   setCommentVisibility,
   setMessageVisibility,
   updateBlockedKeywords,
@@ -12,8 +14,10 @@ import {
 type AdminActionType =
   | "anonymous-mode"
   | "blocked-keywords"
+  | "comment-delete"
   | "comment-visibility"
   | "maintenance"
+  | "message-delete"
   | "message-visibility"
   | "moderation";
 
@@ -37,13 +41,25 @@ function parseBoolean(value: FormDataEntryValue | null) {
   return value === "true";
 }
 
-function redirectToAdmin(request: Request) {
-  return NextResponse.redirect(new URL("/admin/messages", request.url), 303);
+function getRedirectPath(formData: FormData) {
+  const redirectTo = formData.get("redirectTo");
+
+  if (redirectTo === "/admin/pending") {
+    return "/admin/pending";
+  }
+
+  return "/admin/messages";
 }
 
-function redirectToAdminWithError(request: Request, message: string) {
+function redirectToAdmin(request: Request, formData: FormData) {
+  return NextResponse.redirect(new URL(getRedirectPath(formData), request.url), 303);
+}
+
+function redirectToAdminWithError(request: Request, formData: FormData, message: string) {
+  const path = getRedirectPath(formData);
+
   return NextResponse.redirect(
-    new URL(`/admin/messages?error=${encodeURIComponent(message)}`, request.url),
+    new URL(`${path}?error=${encodeURIComponent(message)}`, request.url),
     303,
   );
 }
@@ -71,37 +87,47 @@ export async function POST(request: Request) {
   try {
     if (actionType === "anonymous-mode") {
       await updateForceAnonymous(value);
-      return redirectToAdmin(request);
+      return redirectToAdmin(request, formData);
     }
 
     if (actionType === "blocked-keywords") {
       await updateBlockedKeywords(String(formData.get("blockedKeywords") || ""));
-      return redirectToAdmin(request);
+      return redirectToAdmin(request, formData);
     }
 
     if (actionType === "maintenance") {
       await updateMaintenanceMode(value);
-      return redirectToAdmin(request);
+      return redirectToAdmin(request, formData);
     }
 
     if (actionType === "moderation") {
       await updateModerationEnabled(value);
-      return redirectToAdmin(request);
+      return redirectToAdmin(request, formData);
     }
 
     if (actionType === "message-visibility") {
       await setMessageVisibility(parseId(formData.get("id")), value);
-      return redirectToAdmin(request);
+      return redirectToAdmin(request, formData);
     }
 
     if (actionType === "comment-visibility") {
       await setCommentVisibility(parseId(formData.get("id")), value);
-      return redirectToAdmin(request);
+      return redirectToAdmin(request, formData);
     }
 
-    return redirectToAdminWithError(request, "Invalid admin action.");
+    if (actionType === "message-delete") {
+      await deleteMessage(parseId(formData.get("id")));
+      return redirectToAdmin(request, formData);
+    }
+
+    if (actionType === "comment-delete") {
+      await deleteComment(parseId(formData.get("id")));
+      return redirectToAdmin(request, formData);
+    }
+
+    return redirectToAdminWithError(request, formData, "Invalid admin action.");
   } catch (error) {
     const message = error instanceof Error ? error.message : "Admin action failed.";
-    return redirectToAdminWithError(request, message);
+    return redirectToAdminWithError(request, formData, message);
   }
 }

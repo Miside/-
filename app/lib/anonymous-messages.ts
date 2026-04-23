@@ -325,6 +325,17 @@ export async function getAllMessagesWithComments() {
   }));
 }
 
+export async function getPendingMessagesWithComments() {
+  const messages = (await getAllMessagesWithComments()).filter(
+    (message) => !message.is_visible || message.comments.some((comment) => !comment.is_visible),
+  );
+
+  return messages.map((message) => ({
+    ...message,
+    comments: message.comments.filter((comment) => !comment.is_visible),
+  }));
+}
+
 export async function getVisitorLogs() {
   const response = await requestSupabase(
     "/rest/v1/visitor_logs?select=id,ip_address,user_agent,referer,path,accept_language,country,region,city,timezone,screen,viewport,platform,languages,created_at&order=created_at.desc&limit=300",
@@ -359,5 +370,23 @@ export async function setCommentVisibility(id: number, isVisible: boolean) {
     body: JSON.stringify({
       is_visible: isVisible,
     }),
+  });
+}
+
+export async function deleteMessage(id: number) {
+  await requestSupabase(`/rest/v1/anonymous_messages?id=eq.${id}`, {
+    method: "DELETE",
+    headers: {
+      Prefer: "return=minimal",
+    },
+  });
+}
+
+export async function deleteComment(id: number) {
+  await requestSupabase(`/rest/v1/anonymous_comments?id=eq.${id}`, {
+    method: "DELETE",
+    headers: {
+      Prefer: "return=minimal",
+    },
   });
 }
