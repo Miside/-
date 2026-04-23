@@ -4,7 +4,7 @@ import {
   updateMaintenance,
   updateMessageVisibility,
 } from "../actions";
-import { VisibilityButton } from "./visibility-button";
+import { ActionForm } from "./action-form";
 import {
   getAllMessagesWithComments,
   getSiteSettings,
@@ -101,14 +101,13 @@ export default async function MessagesPage({ searchParams }: MessagesPageProps) 
             <h2>{text.anonymousMode}</h2>
             <p>{settings.force_anonymous ? text.anonymousModeOn : text.anonymousModeOff}</p>
           </div>
-          <VisibilityButton
+          <ActionForm
             action={async () => {
               "use server";
               await updateAnonymousMode(!settings.force_anonymous, params.token || "");
             }}
-            hiddenLabel={text.disableAnonymous}
-            isVisible={settings.force_anonymous}
-            visibleLabel={text.enableAnonymous}
+            isDanger={settings.force_anonymous}
+            label={settings.force_anonymous ? text.disableAnonymous : text.enableAnonymous}
           />
         </div>
 
@@ -117,14 +116,13 @@ export default async function MessagesPage({ searchParams }: MessagesPageProps) 
             <h2>{text.maintenanceMode}</h2>
             <p>{settings.maintenance_mode ? text.maintenanceOn : text.maintenanceOff}</p>
           </div>
-          <VisibilityButton
+          <ActionForm
             action={async () => {
               "use server";
               await updateMaintenance(!settings.maintenance_mode, params.token || "");
             }}
-            hiddenLabel={text.disableMaintenance}
-            isVisible={settings.maintenance_mode}
-            visibleLabel={text.enableMaintenance}
+            isDanger={settings.maintenance_mode}
+            label={settings.maintenance_mode ? text.disableMaintenance : text.enableMaintenance}
           />
         </div>
 
@@ -140,14 +138,13 @@ export default async function MessagesPage({ searchParams }: MessagesPageProps) 
                     {message.is_visible ? text.visible : text.hidden}
                   </span>
                 </div>
-                <VisibilityButton
+                <ActionForm
                   action={async () => {
                     "use server";
                     await updateMessageVisibility(message.id, !message.is_visible, params.token || "");
                   }}
-                  hiddenLabel={text.hide}
-                  isVisible={message.is_visible}
-                  visibleLabel={text.show}
+                  isDanger={message.is_visible}
+                  label={message.is_visible ? text.hide : text.show}
                 />
                 <time dateTime={message.created_at}>
                   {new Date(message.created_at).toLocaleString("zh-CN", {
@@ -179,14 +176,13 @@ export default async function MessagesPage({ searchParams }: MessagesPageProps) 
                           {comment.is_visible ? text.visible : text.hidden}
                         </span>
                       </div>
-                      <VisibilityButton
+                      <ActionForm
                         action={async () => {
                           "use server";
                           await updateCommentVisibility(comment.id, !comment.is_visible, params.token || "");
                         }}
-                        hiddenLabel={text.hide}
-                        isVisible={comment.is_visible}
-                        visibleLabel={text.show}
+                        isDanger={comment.is_visible}
+                        label={comment.is_visible ? text.hide : text.show}
                       />
                       <time dateTime={comment.created_at}>
                         {new Date(comment.created_at).toLocaleString("zh-CN", {
