@@ -4,6 +4,7 @@ import {
   isDatabaseConfigured,
 } from "./lib/anonymous-messages";
 import { MessageWall } from "./message-wall";
+import { cookies } from "next/headers";
 
 export const dynamic = "force-dynamic";
 
@@ -11,9 +12,10 @@ export default async function Home() {
   const settings = isDatabaseConfigured()
     ? await getSiteSettings()
     : { force_anonymous: false, maintenance_mode: false };
+  const hasAdminAccess = await canBypassMaintenance();
   const messages = settings.maintenance_mode ? [] : await loadMessages();
 
-  if (settings.maintenance_mode) {
+  if (settings.maintenance_mode && !hasAdminAccess) {
     return (
       <main className="page-shell">
         <section className="hero anonymous-hero">
@@ -28,6 +30,8 @@ export default async function Home() {
       </main>
     );
   }
+
+  const visibleMessages = settings.maintenance_mode ? await loadMessages() : messages;
 
   return (
     <main className="page-shell">
@@ -66,11 +70,22 @@ export default async function Home() {
           <h2>{"\u8fd9\u91cc\u6536\u96c6\u6240\u6709\u613f\u610f\u88ab\u770b\u89c1\u7684\u533f\u540d\u58f0\u97f3\u3002"}</h2>
         </div>
         <div id="write">
-          <MessageWall initialMessages={messages} />
+          <MessageWall initialMessages={visibleMessages} />
         </div>
       </section>
     </main>
   );
+}
+
+async function canBypassMaintenance() {
+  const adminToken = process.env.ADMIN_TOKEN;
+
+  if (!adminToken) {
+    return false;
+  }
+
+  const cookieStore = await cookies();
+  return cookieStore.get("admin_access")?.value === adminToken;
 }
 
 async function loadMessages() {

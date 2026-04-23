@@ -32,6 +32,9 @@ const text = {
   maintenanceOff: "\u5df2\u5173\u95ed\uff1a\u524d\u53f0\u6b63\u5e38\u8bbf\u95ee",
   enableMaintenance: "\u5f00\u542f\u7ef4\u62a4",
   disableMaintenance: "\u5173\u95ed\u7ef4\u62a4",
+  adminAccess: "\u672c\u673a\u8c03\u8bd5\u5165\u53e3",
+  adminAccessCopy: "\u7ef4\u62a4\u6a21\u5f0f\u4e0b\uff0c\u666e\u901a\u8bbf\u5ba2\u770b\u4e0d\u5230\u7559\u8a00\u5899\uff1b\u4f60\u5728\u672c\u673a\u6253\u5f00\u8fd9\u4e2a\u5165\u53e3\u540e\u53ef\u4ee5\u7ee7\u7eed\u8c03\u8bd5\u524d\u53f0\u3002",
+  openAdminAccess: "\u6253\u5f00\u672c\u673a\u8c03\u8bd5",
   ip: "IP",
   userAgent: "\u8bbe\u5907",
 };
@@ -116,6 +119,16 @@ export default async function MessagesPage({ searchParams }: MessagesPageProps) 
             token={params.token || ""}
             value={!settings.maintenance_mode}
           />
+        </div>
+
+        <div className="admin-setting-panel">
+          <div>
+            <h2>{text.adminAccess}</h2>
+            <p>{text.adminAccessCopy}</p>
+          </div>
+          <a className="admin-action-button" href={`/api/admin/access?token=${encodeURIComponent(params.token || "")}`}>
+            {text.openAdminAccess}
+          </a>
         </div>
 
         <div className="message-list">
