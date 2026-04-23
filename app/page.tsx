@@ -3,6 +3,7 @@ import {
   getSiteSettings,
   isDatabaseConfigured,
 } from "./lib/anonymous-messages";
+import { hasAdminCookieValue } from "./lib/admin-auth";
 import { MessageWall } from "./message-wall";
 import { cookies } from "next/headers";
 
@@ -78,14 +79,8 @@ export default async function Home() {
 }
 
 async function canBypassMaintenance() {
-  const adminToken = process.env.ADMIN_TOKEN;
-
-  if (!adminToken) {
-    return false;
-  }
-
   const cookieStore = await cookies();
-  return cookieStore.get("admin_access")?.value === adminToken;
+  return hasAdminCookieValue(cookieStore.get("admin_access")?.value);
 }
 
 async function loadMessages() {

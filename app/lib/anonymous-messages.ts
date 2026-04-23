@@ -25,14 +25,19 @@ export type AnonymousComment = AnonymousCommentInput & {
   created_at: string;
 };
 
-export type AnonymousMessageWithComments = AnonymousMessage & {
-  comments: AnonymousComment[];
+export type PublicAnonymousMessage = Omit<AnonymousMessage, "ip_address" | "user_agent">;
+
+export type PublicAnonymousComment = Omit<AnonymousComment, "ip_address" | "user_agent">;
+
+export type AnonymousMessageWithComments = PublicAnonymousMessage & {
+  comments: PublicAnonymousComment[];
 };
 
 export type SiteSettings = {
   blocked_keywords: string | null;
   force_anonymous: boolean;
   maintenance_mode: boolean;
+  moderation_enabled: boolean;
 };
 
 const supabaseUrl = process.env.SUPABASE_URL?.replace(/\/$/, "");
@@ -65,7 +70,7 @@ async function requestSupabase(path: string, init: RequestInit) {
   return response;
 }
 
-export async function saveAnonymousMessage(message: AnonymousMessageInput) {
+export async function saveAnonymousMessage(message: AnonymousMessageInput, isVisible = false) {
   await requestSupabase("/rest/v1/anonymous_messages", {
     method: "POST",
     headers: {
@@ -74,12 +79,12 @@ export async function saveAnonymousMessage(message: AnonymousMessageInput) {
     },
     body: JSON.stringify({
       ...message,
-      is_visible: false,
+      is_visible: isVisible,
     }),
   });
 }
 
-export async function saveAnonymousComment(comment: AnonymousCommentInput) {
+export async function saveAnonymousComment(comment: AnonymousCommentInput, isVisible = false) {
   await requestSupabase("/rest/v1/anonymous_comments", {
     method: "POST",
     headers: {
@@ -88,7 +93,7 @@ export async function saveAnonymousComment(comment: AnonymousCommentInput) {
     },
     body: JSON.stringify({
       ...comment,
-      is_visible: false,
+      is_visible: isVisible,
     }),
   });
 }
@@ -96,17 +101,29 @@ export async function saveAnonymousComment(comment: AnonymousCommentInput) {
 export async function getSiteSettings(): Promise<SiteSettings> {
   try {
     const response = await requestSupabase(
-      "/rest/v1/site_settings?select=blocked_keywords,force_anonymous,maintenance_mode&id=eq.1&limit=1",
+      "/rest/v1/site_settings?select=blocked_keywords,force_anonymous,maintenance_mode,moderation_enabled&id=eq.1&limit=1",
       {
         method: "GET",
       },
     );
     const rows = (await response.json()) as SiteSettings[];
 
-    return rows[0] || { blocked_keywords: "", force_anonymous: false, maintenance_mode: false };
+    return (
+      rows[0] || {
+        blocked_keywords: "",
+        force_anonymous: false,
+        maintenance_mode: false,
+        moderation_enabled: true,
+      }
+    );
   } catch (error) {
     console.error("Failed to load site settings:", error);
-    return { blocked_keywords: "", force_anonymous: false, maintenance_mode: false };
+    return {
+      blocked_keywords: "",
+      force_anonymous: false,
+      maintenance_mode: false,
+      moderation_enabled: true,
+    };
   }
 }
 
@@ -124,6 +141,7 @@ export async function updateForceAnonymous(forceAnonymous: boolean) {
       blocked_keywords: settings.blocked_keywords || "",
       force_anonymous: forceAnonymous,
       maintenance_mode: settings.maintenance_mode,
+      moderation_enabled: settings.moderation_enabled,
     }),
   });
 }
@@ -142,6 +160,7 @@ export async function updateMaintenanceMode(maintenanceMode: boolean) {
       blocked_keywords: settings.blocked_keywords || "",
       force_anonymous: settings.force_anonymous,
       maintenance_mode: maintenanceMode,
+      moderation_enabled: settings.moderation_enabled,
     }),
   });
 }
@@ -160,19 +179,39 @@ export async function updateBlockedKeywords(blockedKeywords: string) {
       blocked_keywords: blockedKeywords,
       force_anonymous: settings.force_anonymous,
       maintenance_mode: settings.maintenance_mode,
+      moderation_enabled: settings.moderation_enabled,
+    }),
+  });
+}
+
+export async function updateModerationEnabled(moderationEnabled: boolean) {
+  const settings = await getSiteSettings();
+
+  await requestSupabase("/rest/v1/site_settings?on_conflict=id", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Prefer: "resolution=merge-duplicates,return=minimal",
+    },
+    body: JSON.stringify({
+      id: 1,
+      blocked_keywords: settings.blocked_keywords || "",
+      force_anonymous: settings.force_anonymous,
+      maintenance_mode: settings.maintenance_mode,
+      moderation_enabled: moderationEnabled,
     }),
   });
 }
 
 export async function getPublicMessages() {
   const response = await requestSupabase(
-    "/rest/v1/anonymous_messages?select=id,nickname,content,is_visible,ip_address,user_agent,created_at&is_visible=eq.true&order=created_at.desc&limit=100",
+    "/rest/v1/anonymous_messages?select=id,nickname,content,is_visible,created_at&is_visible=eq.true&order=created_at.desc&limit=100",
     {
       method: "GET",
     },
   );
 
-  return (await response.json()) as AnonymousMessage[];
+  return (await response.json()) as PublicAnonymousMessage[];
 }
 
 export async function getPublicMessagesWithComments() {
@@ -184,12 +223,12 @@ export async function getPublicMessagesWithComments() {
 
   const ids = messages.map((message) => message.id).join(",");
   const response = await requestSupabase(
-    `/rest/v1/anonymous_comments?select=id,message_id,nickname,content,is_visible,ip_address,user_agent,created_at&is_visible=eq.true&message_id=in.(${ids})&order=created_at.asc`,
+    `/rest/v1/anonymous_comments?select=id,message_id,nickname,content,is_visible,created_at&is_visible=eq.true&message_id=in.(${ids})&order=created_at.asc`,
     {
       method: "GET",
     },
   );
-  const comments = (await response.json()) as AnonymousComment[];
+  const comments = (await response.json()) as PublicAnonymousComment[];
 
   const messagesWithComments = messages.map((message) => ({
     ...message,

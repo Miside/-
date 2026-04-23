@@ -1,5 +1,7 @@
 import { ActionForm } from "./action-form";
 import { KeywordsForm } from "./keywords-form";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 import {
   getAllMessagesWithComments,
   getSiteSettings,
@@ -7,14 +9,15 @@ import {
   setCommentVisibility,
   setMessageVisibility,
 } from "../../lib/anonymous-messages";
+import { hasAdminCookieValue, isAdminToken } from "../../lib/admin-auth";
 import { containsBlockedKeyword, detectUnsafeContent, parseKeywords } from "../../lib/content-filter";
 
 const text = {
   adminDisabled: "\u540e\u53f0\u672a\u542f\u7528",
   configureToken: "\u8bf7\u5148\u5728 Vercel \u914d\u7f6e ADMIN_TOKEN\u3002",
   needToken: "\u9700\u8981\u8bbf\u95ee\u53e3\u4ee4",
-  wrongToken: "\u8bf7\u5728\u7f51\u5740\u540e\u52a0\u4e0a\u6b63\u786e\u7684 token\u3002",
-  tokenFormat: "\u683c\u5f0f\uff1a/admin/messages?token=\u4f60\u7684\u53e3\u4ee4",
+  wrongToken: "\u8bbf\u95ee\u53e3\u4ee4\u4e0d\u6b63\u786e\u3002",
+  tokenFormat: "\u767b\u5f55\u683c\u5f0f\uff1a/api/admin/access?token=\u4f60\u7684\u53e3\u4ee4",
   databaseMissing: "\u6570\u636e\u5e93\u672a\u914d\u7f6e",
   configureDatabase: "\u8bf7\u5148\u914d\u7f6e Supabase \u73af\u5883\u53d8\u91cf\u3002",
   admin: "\u7559\u8a00\u540e\u53f0",
@@ -36,9 +39,11 @@ const text = {
   maintenanceOff: "\u5df2\u5173\u95ed\uff1a\u524d\u53f0\u6b63\u5e38\u8bbf\u95ee",
   enableMaintenance: "\u5f00\u542f\u7ef4\u62a4",
   disableMaintenance: "\u5173\u95ed\u7ef4\u62a4",
-  adminAccess: "\u672c\u673a\u8c03\u8bd5\u5165\u53e3",
-  adminAccessCopy: "\u7ef4\u62a4\u6a21\u5f0f\u4e0b\uff0c\u666e\u901a\u8bbf\u5ba2\u770b\u4e0d\u5230\u7559\u8a00\u5899\uff1b\u4f60\u5728\u672c\u673a\u6253\u5f00\u8fd9\u4e2a\u5165\u53e3\u540e\u53ef\u4ee5\u7ee7\u7eed\u8c03\u8bd5\u524d\u53f0\u3002",
-  openAdminAccess: "\u6253\u5f00\u672c\u673a\u8c03\u8bd5",
+  moderationMode: "\u5ba1\u6838\u6a21\u5f0f",
+  moderationOn: "\u5df2\u5f00\u542f\uff1a\u65b0\u7559\u8a00\u548c\u8bc4\u8bba\u9700\u8981\u4f60\u901a\u8fc7\u540e\u624d\u516c\u5f00",
+  moderationOff: "\u5df2\u5173\u95ed\uff1a\u901a\u8fc7\u5b89\u5168\u68c0\u6d4b\u7684\u5185\u5bb9\u4f1a\u76f4\u63a5\u516c\u5f00",
+  enableModeration: "\u5f00\u542f\u5ba1\u6838",
+  disableModeration: "\u5173\u95ed\u5ba1\u6838",
   keywordFilter: "\u5173\u952e\u8bcd\u8fc7\u6ee4",
   keywordFilterCopy: "\u547d\u4e2d\u5173\u952e\u8bcd\u7684\u65b0\u5185\u5bb9\u4f1a\u88ab\u62d2\u7edd\uff1b\u5df2\u53d1\u5e03\u7684\u547d\u4e2d\u5185\u5bb9\u4f1a\u81ea\u52a8\u9690\u85cf\u3002",
   ip: "IP",
@@ -67,7 +72,26 @@ export default async function MessagesPage({ searchParams }: MessagesPageProps) 
     );
   }
 
-  if (params.token !== adminToken) {
+  if (params.token) {
+    if (isAdminToken(params.token)) {
+      redirect(`/api/admin/access?token=${encodeURIComponent(params.token)}`);
+    }
+
+    return (
+      <main className="page-shell">
+        <section className="section">
+          <p className="section-kicker">{text.needToken}</p>
+          <h1 className="admin-title">{text.wrongToken}</h1>
+          <p className="body-copy">{text.tokenFormat}</p>
+        </section>
+      </main>
+    );
+  }
+
+  const cookieStore = await cookies();
+  const hasAdminAccess = hasAdminCookieValue(cookieStore.get("admin_access")?.value);
+
+  if (!hasAdminAccess) {
     return (
       <main className="page-shell">
         <section className="section">
@@ -112,7 +136,6 @@ export default async function MessagesPage({ searchParams }: MessagesPageProps) 
             actionType="anonymous-mode"
             isDanger={settings.force_anonymous}
             label={settings.force_anonymous ? text.disableAnonymous : text.enableAnonymous}
-            token={params.token || ""}
             value={!settings.force_anonymous}
           />
         </div>
@@ -126,19 +149,21 @@ export default async function MessagesPage({ searchParams }: MessagesPageProps) 
             actionType="maintenance"
             isDanger={settings.maintenance_mode}
             label={settings.maintenance_mode ? text.disableMaintenance : text.enableMaintenance}
-            token={params.token || ""}
             value={!settings.maintenance_mode}
           />
         </div>
 
         <div className="admin-setting-panel">
           <div>
-            <h2>{text.adminAccess}</h2>
-            <p>{text.adminAccessCopy}</p>
+            <h2>{text.moderationMode}</h2>
+            <p>{settings.moderation_enabled ? text.moderationOn : text.moderationOff}</p>
           </div>
-          <a className="admin-action-button" href={`/api/admin/access?token=${encodeURIComponent(params.token || "")}`}>
-            {text.openAdminAccess}
-          </a>
+          <ActionForm
+            actionType="moderation"
+            isDanger={settings.moderation_enabled}
+            label={settings.moderation_enabled ? text.disableModeration : text.enableModeration}
+            value={!settings.moderation_enabled}
+          />
         </div>
 
         <div className="admin-setting-panel is-stacked">
@@ -146,7 +171,7 @@ export default async function MessagesPage({ searchParams }: MessagesPageProps) 
             <h2>{text.keywordFilter}</h2>
             <p>{text.keywordFilterCopy}</p>
           </div>
-          <KeywordsForm keywords={settings.blocked_keywords || ""} token={params.token || ""} />
+          <KeywordsForm keywords={settings.blocked_keywords || ""} />
         </div>
 
         <div className="message-list">
@@ -166,7 +191,6 @@ export default async function MessagesPage({ searchParams }: MessagesPageProps) 
                   id={message.id}
                   isDanger={message.is_visible}
                   label={message.is_visible ? text.hide : text.show}
-                  token={params.token || ""}
                   value={!message.is_visible}
                 />
                 <time dateTime={message.created_at}>
@@ -204,7 +228,6 @@ export default async function MessagesPage({ searchParams }: MessagesPageProps) 
                         id={comment.id}
                         isDanger={comment.is_visible}
                         label={comment.is_visible ? text.hide : text.show}
-                        token={params.token || ""}
                         value={!comment.is_visible}
                       />
                       <time dateTime={comment.created_at}>

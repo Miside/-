@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
+import { hasAdminAccessFromCookieHeader } from "../../../lib/admin-auth";
 import {
   setCommentVisibility,
   setMessageVisibility,
   updateBlockedKeywords,
   updateForceAnonymous,
   updateMaintenanceMode,
+  updateModerationEnabled,
 } from "../../../lib/anonymous-messages";
 
 type AdminActionType =
@@ -12,10 +14,11 @@ type AdminActionType =
   | "blocked-keywords"
   | "comment-visibility"
   | "maintenance"
-  | "message-visibility";
+  | "message-visibility"
+  | "moderation";
 
-function assertAdmin(token: FormDataEntryValue | null) {
-  if (typeof token !== "string" || !process.env.ADMIN_TOKEN || token !== process.env.ADMIN_TOKEN) {
+function assertAdmin(request: Request) {
+  if (!hasAdminAccessFromCookieHeader(request.headers.get("cookie"))) {
     throw new Error("Unauthorized");
   }
 }
@@ -34,19 +37,13 @@ function parseBoolean(value: FormDataEntryValue | null) {
   return value === "true";
 }
 
-function redirectToAdmin(request: Request, token: string) {
-  return NextResponse.redirect(
-    new URL(`/admin/messages?token=${encodeURIComponent(token)}`, request.url),
-    303,
-  );
+function redirectToAdmin(request: Request) {
+  return NextResponse.redirect(new URL("/admin/messages", request.url), 303);
 }
 
-function redirectToAdminWithError(request: Request, token: string, message: string) {
+function redirectToAdminWithError(request: Request, message: string) {
   return NextResponse.redirect(
-    new URL(
-      `/admin/messages?token=${encodeURIComponent(token)}&error=${encodeURIComponent(message)}`,
-      request.url,
-    ),
+    new URL(`/admin/messages?error=${encodeURIComponent(message)}`, request.url),
     303,
   );
 }
@@ -62,47 +59,49 @@ export async function GET() {
 
 export async function POST(request: Request) {
   const formData = await request.formData();
-  const token = formData.get("token");
   const actionType = formData.get("actionType") as AdminActionType | null;
   const value = parseBoolean(formData.get("value"));
 
   try {
-    assertAdmin(token);
+    assertAdmin(request);
   } catch {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 
-  const tokenString = String(token);
-
   try {
     if (actionType === "anonymous-mode") {
       await updateForceAnonymous(value);
-      return redirectToAdmin(request, tokenString);
+      return redirectToAdmin(request);
     }
 
     if (actionType === "blocked-keywords") {
       await updateBlockedKeywords(String(formData.get("blockedKeywords") || ""));
-      return redirectToAdmin(request, tokenString);
+      return redirectToAdmin(request);
     }
 
     if (actionType === "maintenance") {
       await updateMaintenanceMode(value);
-      return redirectToAdmin(request, tokenString);
+      return redirectToAdmin(request);
+    }
+
+    if (actionType === "moderation") {
+      await updateModerationEnabled(value);
+      return redirectToAdmin(request);
     }
 
     if (actionType === "message-visibility") {
       await setMessageVisibility(parseId(formData.get("id")), value);
-      return redirectToAdmin(request, tokenString);
+      return redirectToAdmin(request);
     }
 
     if (actionType === "comment-visibility") {
       await setCommentVisibility(parseId(formData.get("id")), value);
-      return redirectToAdmin(request, tokenString);
+      return redirectToAdmin(request);
     }
 
-    return redirectToAdminWithError(request, tokenString, "Invalid admin action.");
+    return redirectToAdminWithError(request, "Invalid admin action.");
   } catch (error) {
     const message = error instanceof Error ? error.message : "Admin action failed.";
-    return redirectToAdminWithError(request, tokenString, message);
+    return redirectToAdminWithError(request, message);
   }
 }

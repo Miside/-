@@ -3,6 +3,7 @@ import {
   isDatabaseConfigured,
   saveAnonymousComment,
 } from "../../../../lib/anonymous-messages";
+import { hasAdminAccessFromCookieHeader } from "../../../../lib/admin-auth";
 import { containsBlockedKeyword, detectUnsafeContent, parseKeywords } from "../../../../lib/content-filter";
 import { isLikelyChinesePersonalName } from "../../../../lib/name-safety";
 
@@ -109,7 +110,7 @@ export async function POST(request: Request, context: RouteContext) {
       content,
       ip_address: getClientIp(request),
       user_agent: request.headers.get("user-agent"),
-    });
+    }, !settings.moderation_enabled);
   } catch (error) {
     console.error("Failed to save anonymous comment:", error);
     return Response.json({ message: messages.saveFailed }, { status: 500 });
@@ -122,17 +123,7 @@ export async function POST(request: Request, context: RouteContext) {
 }
 
 function canBypassMaintenance(request: Request) {
-  const adminToken = process.env.ADMIN_TOKEN;
-
-  if (!adminToken) {
-    return false;
-  }
-
-  const cookieHeader = request.headers.get("cookie") || "";
-  return cookieHeader
-    .split(";")
-    .map((item) => item.trim())
-    .some((item) => item === `admin_access=${adminToken}`);
+  return hasAdminAccessFromCookieHeader(request.headers.get("cookie"));
 }
 
 function getClientIp(request: Request) {

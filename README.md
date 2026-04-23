@@ -68,15 +68,17 @@ create table if not exists public.site_settings (
   blocked_keywords text,
   force_anonymous boolean not null default false,
   maintenance_mode boolean not null default false,
+  moderation_enabled boolean not null default true,
   updated_at timestamptz not null default now()
 );
 
 alter table public.site_settings
   add column if not exists blocked_keywords text,
-  add column if not exists maintenance_mode boolean not null default false;
+  add column if not exists maintenance_mode boolean not null default false,
+  add column if not exists moderation_enabled boolean not null default true;
 
-insert into public.site_settings (id, force_anonymous)
-values (1, false)
+insert into public.site_settings (id, force_anonymous, moderation_enabled)
+values (1, false, true)
 on conflict (id) do nothing;
 
 alter table public.site_settings enable row level security;
@@ -103,5 +105,11 @@ Public wall:
 Admin:
 
 ```text
-/admin/messages?token=your-admin-token
+/api/admin/access?token=your-admin-token
+```
+
+After this login URL succeeds, it redirects to:
+
+```text
+/admin/messages
 ```

@@ -1,12 +1,10 @@
 type KeywordsFormProps = {
   keywords: string;
-  token: string;
 };
 
-export function KeywordsForm({ keywords, token }: KeywordsFormProps) {
+export function KeywordsForm({ keywords }: KeywordsFormProps) {
   return (
     <form action="/api/admin/actions" className="keywords-form" method="post">
-      <input name="token" type="hidden" value={token} />
       <input name="actionType" type="hidden" value="blocked-keywords" />
       <textarea
         name="blockedKeywords"

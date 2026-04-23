@@ -1,9 +1,13 @@
 type ActionFormProps = {
-  actionType: "anonymous-mode" | "comment-visibility" | "maintenance" | "message-visibility";
+  actionType:
+    | "anonymous-mode"
+    | "comment-visibility"
+    | "maintenance"
+    | "message-visibility"
+    | "moderation";
   id?: number;
   isDanger?: boolean;
   label: string;
-  token: string;
   value: boolean;
 };
 
@@ -12,12 +16,10 @@ export function ActionForm({
   id,
   isDanger = false,
   label,
-  token,
   value,
 }: ActionFormProps) {
   return (
     <form action="/api/admin/actions" method="post">
-      <input name="token" type="hidden" value={token} />
       <input name="actionType" type="hidden" value={actionType} />
       <input name="value" type="hidden" value={value ? "true" : "false"} />
       {id ? <input name="id" type="hidden" value={String(id)} /> : null}

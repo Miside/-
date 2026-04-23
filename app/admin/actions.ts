@@ -1,5 +1,6 @@
 "use server";
 
+import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import {
   setCommentVisibility,
@@ -7,36 +8,39 @@ import {
   updateMaintenanceMode,
   updateForceAnonymous,
 } from "../lib/anonymous-messages";
+import { hasAdminCookieValue } from "../lib/admin-auth";
 
-function assertAdmin(token: string) {
-  if (!process.env.ADMIN_TOKEN || token !== process.env.ADMIN_TOKEN) {
+async function assertAdmin() {
+  const cookieStore = await cookies();
+
+  if (!hasAdminCookieValue(cookieStore.get("admin_access")?.value)) {
     throw new Error("Unauthorized");
   }
 }
 
-export async function updateMessageVisibility(id: number, isVisible: boolean, token: string) {
-  assertAdmin(token);
+export async function updateMessageVisibility(id: number, isVisible: boolean) {
+  await assertAdmin();
   await setMessageVisibility(id, isVisible);
   revalidatePath("/admin/messages");
   revalidatePath("/");
 }
 
-export async function updateCommentVisibility(id: number, isVisible: boolean, token: string) {
-  assertAdmin(token);
+export async function updateCommentVisibility(id: number, isVisible: boolean) {
+  await assertAdmin();
   await setCommentVisibility(id, isVisible);
   revalidatePath("/admin/messages");
   revalidatePath("/");
 }
 
-export async function updateAnonymousMode(forceAnonymous: boolean, token: string) {
-  assertAdmin(token);
+export async function updateAnonymousMode(forceAnonymous: boolean) {
+  await assertAdmin();
   await updateForceAnonymous(forceAnonymous);
   revalidatePath("/admin/messages");
   revalidatePath("/");
 }
 
-export async function updateMaintenance(maintenanceMode: boolean, token: string) {
-  assertAdmin(token);
+export async function updateMaintenance(maintenanceMode: boolean) {
+  await assertAdmin();
   await updateMaintenanceMode(maintenanceMode);
   revalidatePath("/admin/messages");
   revalidatePath("/");
