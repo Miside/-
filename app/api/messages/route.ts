@@ -5,6 +5,7 @@ import {
   saveAnonymousMessage,
 } from "../../lib/anonymous-messages";
 import { hasAdminAccessFromCookieHeader } from "../../lib/admin-auth";
+import { getClientIp } from "../../lib/client-details";
 import { containsBlockedKeyword, detectUnsafeContent, parseKeywords } from "../../lib/content-filter";
 import { isLikelyChinesePersonalName } from "../../lib/name-safety";
 
@@ -134,19 +135,4 @@ function canBypassMaintenance(request?: Request) {
   }
 
   return hasAdminAccessFromCookieHeader(request.headers.get("cookie"));
-}
-
-function getClientIp(request: Request) {
-  const forwardedFor = request.headers.get("x-forwarded-for");
-
-  if (forwardedFor) {
-    return forwardedFor.split(",")[0]?.trim() || null;
-  }
-
-  return (
-    request.headers.get("x-real-ip") ||
-    request.headers.get("cf-connecting-ip") ||
-    request.headers.get("x-vercel-forwarded-for") ||
-    null
-  );
 }

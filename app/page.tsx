@@ -5,6 +5,7 @@ import {
 } from "./lib/anonymous-messages";
 import { hasAdminCookieValue } from "./lib/admin-auth";
 import { MessageWall } from "./message-wall";
+import { VisitTracker } from "./visit-tracker";
 import { cookies } from "next/headers";
 
 export const dynamic = "force-dynamic";
@@ -19,6 +20,7 @@ export default async function Home() {
   if (settings.maintenance_mode && !hasAdminAccess) {
     return (
       <main className="page-shell">
+        <VisitTracker />
         <section className="hero anonymous-hero">
           <div className="hero-copy">
             <p className="eyebrow">Maintenance</p>
@@ -36,6 +38,7 @@ export default async function Home() {
 
   return (
     <main className="page-shell">
+      <VisitTracker />
       <section className="hero anonymous-hero">
         <div className="hero-copy">
           <p className="eyebrow">Anonymous Wall</p>

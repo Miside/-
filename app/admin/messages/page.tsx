@@ -11,6 +11,7 @@ import {
   setMessageVisibility,
 } from "../../lib/anonymous-messages";
 import { hasAdminCookieValue, isAdminToken } from "../../lib/admin-auth";
+import { parseClientDetails } from "../../lib/client-details";
 import { containsBlockedKeyword, detectUnsafeContent, parseKeywords } from "../../lib/content-filter";
 
 const text = {
@@ -129,6 +130,11 @@ export default async function MessagesPage({ searchParams }: MessagesPageProps) 
         <div className="section-heading">
           <p className="section-kicker">{text.admin}</p>
           <h1 className="admin-title">{text.title}</h1>
+        </div>
+        <div className="admin-nav">
+          <a className="admin-action-button" href="/admin/visits">
+            访问记录
+          </a>
         </div>
 
         {params.error ? <p className="form-message is-error">{params.error}</p> : null}
@@ -308,7 +314,7 @@ function ClientMeta({
   ipAddress: string | null;
   userAgent: string | null;
 }) {
-  const details = parseUserAgent(userAgent);
+  const details = parseClientDetails(userAgent);
 
   return (
     <>
@@ -318,11 +324,21 @@ function ClientMeta({
       </div>
       <div>
         <dt>{text.browser}</dt>
-        <dd>{details.browser}</dd>
+        <dd>
+          {details.browser}
+          {details.browserVersion !== "-" ? ` ${details.browserVersion}` : ""}
+        </dd>
       </div>
       <div>
         <dt>{text.os}</dt>
-        <dd>{details.os}</dd>
+        <dd>
+          {details.os}
+          {details.osVersion !== "-" ? ` ${details.osVersion}` : ""}
+        </dd>
+      </div>
+      <div>
+        <dt>内核</dt>
+        <dd>{details.engine}</dd>
       </div>
       <div>
         <dt>{text.device}</dt>
@@ -334,84 +350,4 @@ function ClientMeta({
       </div>
     </>
   );
-}
-
-function parseUserAgent(userAgent: string | null) {
-  if (!userAgent) {
-    return {
-      browser: "-",
-      device: "-",
-      os: "-",
-    };
-  }
-
-  return {
-    browser: detectBrowser(userAgent),
-    device: detectDevice(userAgent),
-    os: detectOperatingSystem(userAgent),
-  };
-}
-
-function detectBrowser(userAgent: string) {
-  if (/Edg\//.test(userAgent)) {
-    return "Microsoft Edge";
-  }
-
-  if (/OPR\//.test(userAgent)) {
-    return "Opera";
-  }
-
-  if (/Chrome\//.test(userAgent) && !/Chromium\//.test(userAgent)) {
-    return "Chrome";
-  }
-
-  if (/Firefox\//.test(userAgent)) {
-    return "Firefox";
-  }
-
-  if (/Safari\//.test(userAgent) && /Version\//.test(userAgent)) {
-    return "Safari";
-  }
-
-  return "未知浏览器";
-}
-
-function detectDevice(userAgent: string) {
-  if (/iPad|Tablet/i.test(userAgent)) {
-    return "平板";
-  }
-
-  if (/Mobile|Android|iPhone|iPod/i.test(userAgent)) {
-    return "手机";
-  }
-
-  return "电脑";
-}
-
-function detectOperatingSystem(userAgent: string) {
-  if (/Windows NT 10/.test(userAgent)) {
-    return "Windows 10/11";
-  }
-
-  if (/Windows NT/.test(userAgent)) {
-    return "Windows";
-  }
-
-  if (/Android/.test(userAgent)) {
-    return "Android";
-  }
-
-  if (/iPhone|iPad|iPod/.test(userAgent)) {
-    return "iOS/iPadOS";
-  }
-
-  if (/Mac OS X/.test(userAgent)) {
-    return "macOS";
-  }
-
-  if (/Linux/.test(userAgent)) {
-    return "Linux";
-  }
-
-  return "未知系统";
 }

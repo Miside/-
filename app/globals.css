@@ -339,6 +339,13 @@ code {
   gap: 16px;
 }
 
+.admin-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: -8px 0 18px;
+}
+
 .message-card {
   display: grid;
   gap: 12px;

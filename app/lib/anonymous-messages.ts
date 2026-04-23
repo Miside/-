@@ -40,6 +40,27 @@ export type SiteSettings = {
   moderation_enabled: boolean;
 };
 
+export type VisitorLogInput = {
+  accept_language: string | null;
+  city: string | null;
+  country: string | null;
+  ip_address: string | null;
+  languages: string[] | null;
+  path: string | null;
+  platform: string | null;
+  referer: string | null;
+  region: string | null;
+  screen: string | null;
+  timezone: string | null;
+  user_agent: string | null;
+  viewport: string | null;
+};
+
+export type VisitorLog = VisitorLogInput & {
+  id: number;
+  created_at: string;
+};
+
 const supabaseUrl = process.env.SUPABASE_URL?.replace(/\/$/, "");
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -95,6 +116,17 @@ export async function saveAnonymousComment(comment: AnonymousCommentInput, isVis
       ...comment,
       is_visible: isVisible,
     }),
+  });
+}
+
+export async function saveVisitorLog(log: VisitorLogInput) {
+  await requestSupabase("/rest/v1/visitor_logs", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Prefer: "return=minimal",
+    },
+    body: JSON.stringify(log),
   });
 }
 
@@ -278,6 +310,17 @@ export async function getAllMessagesWithComments() {
     ...message,
     comments: comments.filter((comment) => comment.message_id === message.id),
   }));
+}
+
+export async function getVisitorLogs() {
+  const response = await requestSupabase(
+    "/rest/v1/visitor_logs?select=id,ip_address,user_agent,referer,path,accept_language,country,region,city,timezone,screen,viewport,platform,languages,created_at&order=created_at.desc&limit=300",
+    {
+      method: "GET",
+    },
+  );
+
+  return (await response.json()) as VisitorLog[];
 }
 
 export async function setMessageVisibility(id: number, isVisible: boolean) {
