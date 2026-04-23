@@ -120,3 +120,49 @@ export async function getAllMessages() {
 
   return (await response.json()) as AnonymousMessage[];
 }
+
+export async function getAllComments() {
+  const response = await requestSupabase(
+    "/rest/v1/anonymous_comments?select=id,message_id,nickname,content,is_visible,created_at&order=created_at.asc&limit=500",
+    {
+      method: "GET",
+    },
+  );
+
+  return (await response.json()) as AnonymousComment[];
+}
+
+export async function getAllMessagesWithComments() {
+  const [messages, comments] = await Promise.all([getAllMessages(), getAllComments()]);
+
+  return messages.map((message) => ({
+    ...message,
+    comments: comments.filter((comment) => comment.message_id === message.id),
+  }));
+}
+
+export async function setMessageVisibility(id: number, isVisible: boolean) {
+  await requestSupabase(`/rest/v1/anonymous_messages?id=eq.${id}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      Prefer: "return=minimal",
+    },
+    body: JSON.stringify({
+      is_visible: isVisible,
+    }),
+  });
+}
+
+export async function setCommentVisibility(id: number, isVisible: boolean) {
+  await requestSupabase(`/rest/v1/anonymous_comments?id=eq.${id}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      Prefer: "return=minimal",
+    },
+    body: JSON.stringify({
+      is_visible: isVisible,
+    }),
+  });
+}

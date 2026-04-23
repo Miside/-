@@ -370,6 +370,77 @@ code {
   white-space: pre-wrap;
 }
 
+.admin-action-button {
+  width: fit-content;
+  min-height: 38px;
+  border: 1px solid rgba(56, 102, 65, 0.18);
+  border-radius: 10px;
+  padding: 0 14px;
+  color: var(--leaf);
+  background: rgba(56, 102, 65, 0.1);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+}
+
+.admin-action-button.is-danger {
+  color: var(--accent-dark);
+  border-color: rgba(213, 93, 63, 0.2);
+  background: rgba(213, 93, 63, 0.1);
+}
+
+.admin-action-button:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.admin-comments {
+  display: grid;
+  gap: 10px;
+  margin-top: 8px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.admin-comments h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 1rem;
+}
+
+.admin-comments h3 span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  color: var(--accent-dark);
+  background: rgba(213, 93, 63, 0.1);
+  font-size: 0.82rem;
+}
+
+.admin-comment-card {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid rgba(31, 31, 26, 0.08);
+  border-radius: 14px;
+  background: rgba(255, 252, 246, 0.72);
+}
+
+.admin-comment-card strong {
+  margin-right: 8px;
+  color: var(--accent-dark);
+}
+
+.admin-comment-card time {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
 .anonymous-hero .hero-copy h1 {
   max-width: 8ch;
 }

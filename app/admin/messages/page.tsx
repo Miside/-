@@ -1,4 +1,6 @@
-import { getAllMessages, isDatabaseConfigured } from "../../lib/anonymous-messages";
+import { updateCommentVisibility, updateMessageVisibility } from "../actions";
+import { VisibilityButton } from "./visibility-button";
+import { getAllMessagesWithComments, isDatabaseConfigured } from "../../lib/anonymous-messages";
 
 const text = {
   adminDisabled: "\u540e\u53f0\u672a\u542f\u7528",
@@ -14,6 +16,9 @@ const text = {
   anonymous: "\u533f\u540d\u7528\u6237",
   visible: "\u516c\u5f00",
   hidden: "\u5df2\u9690\u85cf",
+  hide: "\u9690\u85cf",
+  show: "\u6062\u590d",
+  comments: "\u8bc4\u8bba",
 };
 
 type MessagesPageProps = {
@@ -60,7 +65,7 @@ export default async function MessagesPage({ searchParams }: MessagesPageProps) 
     );
   }
 
-  const messages = await getAllMessages();
+  const messages = await getAllMessagesWithComments();
 
   return (
     <main className="page-shell">
@@ -82,6 +87,15 @@ export default async function MessagesPage({ searchParams }: MessagesPageProps) 
                     {message.is_visible ? text.visible : text.hidden}
                   </span>
                 </div>
+                <VisibilityButton
+                  action={async () => {
+                    "use server";
+                    await updateMessageVisibility(message.id, !message.is_visible, params.token || "");
+                  }}
+                  hiddenLabel={text.hide}
+                  isVisible={message.is_visible}
+                  visibleLabel={text.show}
+                />
                 <time dateTime={message.created_at}>
                   {new Date(message.created_at).toLocaleString("zh-CN", {
                     dateStyle: "medium",
@@ -89,6 +103,38 @@ export default async function MessagesPage({ searchParams }: MessagesPageProps) 
                   })}
                 </time>
                 <p>{message.content}</p>
+                <div className="admin-comments">
+                  <h3>
+                    {text.comments}
+                    <span>{message.comments.length}</span>
+                  </h3>
+                  {message.comments.map((comment) => (
+                    <div className="admin-comment-card" key={comment.id}>
+                      <div>
+                        <strong>{comment.nickname || text.anonymous}</strong>
+                        <span className={comment.is_visible ? "status-pill" : "status-pill is-hidden"}>
+                          {comment.is_visible ? text.visible : text.hidden}
+                        </span>
+                      </div>
+                      <VisibilityButton
+                        action={async () => {
+                          "use server";
+                          await updateCommentVisibility(comment.id, !comment.is_visible, params.token || "");
+                        }}
+                        hiddenLabel={text.hide}
+                        isVisible={comment.is_visible}
+                        visibleLabel={text.show}
+                      />
+                      <time dateTime={comment.created_at}>
+                        {new Date(comment.created_at).toLocaleString("zh-CN", {
+                          dateStyle: "medium",
+                          timeStyle: "short",
+                        })}
+                      </time>
+                      <p>{comment.content}</p>
+                    </div>
+                  ))}
+                </div>
               </article>
             ))
           )}
