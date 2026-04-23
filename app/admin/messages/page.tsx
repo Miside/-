@@ -1,9 +1,3 @@
-import {
-  updateAnonymousMode,
-  updateCommentVisibility,
-  updateMaintenance,
-  updateMessageVisibility,
-} from "../actions";
 import { ActionForm } from "./action-form";
 import {
   getAllMessagesWithComments,
@@ -102,12 +96,11 @@ export default async function MessagesPage({ searchParams }: MessagesPageProps) 
             <p>{settings.force_anonymous ? text.anonymousModeOn : text.anonymousModeOff}</p>
           </div>
           <ActionForm
-            action={async () => {
-              "use server";
-              await updateAnonymousMode(!settings.force_anonymous, params.token || "");
-            }}
+            actionType="anonymous-mode"
             isDanger={settings.force_anonymous}
             label={settings.force_anonymous ? text.disableAnonymous : text.enableAnonymous}
+            token={params.token || ""}
+            value={!settings.force_anonymous}
           />
         </div>
 
@@ -117,12 +110,11 @@ export default async function MessagesPage({ searchParams }: MessagesPageProps) 
             <p>{settings.maintenance_mode ? text.maintenanceOn : text.maintenanceOff}</p>
           </div>
           <ActionForm
-            action={async () => {
-              "use server";
-              await updateMaintenance(!settings.maintenance_mode, params.token || "");
-            }}
+            actionType="maintenance"
             isDanger={settings.maintenance_mode}
             label={settings.maintenance_mode ? text.disableMaintenance : text.enableMaintenance}
+            token={params.token || ""}
+            value={!settings.maintenance_mode}
           />
         </div>
 
@@ -139,12 +131,12 @@ export default async function MessagesPage({ searchParams }: MessagesPageProps) 
                   </span>
                 </div>
                 <ActionForm
-                  action={async () => {
-                    "use server";
-                    await updateMessageVisibility(message.id, !message.is_visible, params.token || "");
-                  }}
+                  actionType="message-visibility"
+                  id={message.id}
                   isDanger={message.is_visible}
                   label={message.is_visible ? text.hide : text.show}
+                  token={params.token || ""}
+                  value={!message.is_visible}
                 />
                 <time dateTime={message.created_at}>
                   {new Date(message.created_at).toLocaleString("zh-CN", {
@@ -177,12 +169,12 @@ export default async function MessagesPage({ searchParams }: MessagesPageProps) 
                         </span>
                       </div>
                       <ActionForm
-                        action={async () => {
-                          "use server";
-                          await updateCommentVisibility(comment.id, !comment.is_visible, params.token || "");
-                        }}
+                        actionType="comment-visibility"
+                        id={comment.id}
                         isDanger={comment.is_visible}
                         label={comment.is_visible ? text.hide : text.show}
+                        token={params.token || ""}
+                        value={!comment.is_visible}
                       />
                       <time dateTime={comment.created_at}>
                         {new Date(comment.created_at).toLocaleString("zh-CN", {
