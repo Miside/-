@@ -32,14 +32,17 @@ function isNonEmptyString(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   if (!isDatabaseConfigured()) {
     return Response.json({ messages: [] });
   }
 
   try {
     const settings = await getSiteSettings();
-    const publicMessages = settings.maintenance_mode ? [] : await getPublicMessagesWithComments();
+    const publicMessages =
+      settings.maintenance_mode && !canBypassMaintenance(request)
+        ? []
+        : await getPublicMessagesWithComments();
     return Response.json({ messages: publicMessages });
   } catch (error) {
     console.error("Failed to load anonymous messages:", error);
@@ -82,7 +85,7 @@ export async function POST(request: Request) {
 
   const settings = await getSiteSettings();
 
-  if (settings.maintenance_mode) {
+  if (settings.maintenance_mode && !canBypassMaintenance(request)) {
     return Response.json({ message: messages.maintenance }, { status: 503 });
   }
 
@@ -102,6 +105,20 @@ export async function POST(request: Request) {
     ok: true,
     message: messages.saved,
   });
+}
+
+function canBypassMaintenance(request?: Request) {
+  const adminToken = process.env.ADMIN_TOKEN;
+
+  if (!adminToken || !request) {
+    return false;
+  }
+
+  const cookieHeader = request.headers.get("cookie") || "";
+  return cookieHeader
+    .split(";")
+    .map((item) => item.trim())
+    .some((item) => item === `admin_access=${adminToken}`);
 }
 
 function getClientIp(request: Request) {

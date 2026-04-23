@@ -79,7 +79,7 @@ export async function POST(request: Request, context: RouteContext) {
 
   const settings = await getSiteSettings();
 
-  if (settings.maintenance_mode) {
+  if (settings.maintenance_mode && !canBypassMaintenance(request)) {
     return Response.json({ message: messages.maintenance }, { status: 503 });
   }
 
@@ -100,6 +100,20 @@ export async function POST(request: Request, context: RouteContext) {
     ok: true,
     message: messages.saved,
   });
+}
+
+function canBypassMaintenance(request: Request) {
+  const adminToken = process.env.ADMIN_TOKEN;
+
+  if (!adminToken) {
+    return false;
+  }
+
+  const cookieHeader = request.headers.get("cookie") || "";
+  return cookieHeader
+    .split(";")
+    .map((item) => item.trim())
+    .some((item) => item === `admin_access=${adminToken}`);
 }
 
 function getClientIp(request: Request) {
