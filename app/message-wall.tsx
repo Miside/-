@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import type { AnonymousMessageWithComments } from "./lib/anonymous-messages";
 
 const text = {
@@ -49,6 +49,25 @@ export function MessageWall({ initialMessages }: MessageWallProps) {
       setMessages(result.messages);
     }
   }
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      void refreshMessages();
+    }, 500);
+
+    function handleVisibilityChange() {
+      if (!document.hidden) {
+        void refreshMessages();
+      }
+    }
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      window.clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, []);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

@@ -25,6 +25,10 @@ export type AnonymousMessageWithComments = AnonymousMessage & {
   comments: AnonymousComment[];
 };
 
+export type SiteSettings = {
+  force_anonymous: boolean;
+};
+
 const supabaseUrl = process.env.SUPABASE_URL?.replace(/\/$/, "");
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -77,6 +81,37 @@ export async function saveAnonymousComment(comment: AnonymousCommentInput) {
   });
 }
 
+export async function getSiteSettings(): Promise<SiteSettings> {
+  try {
+    const response = await requestSupabase(
+      "/rest/v1/site_settings?select=force_anonymous&id=eq.1&limit=1",
+      {
+        method: "GET",
+      },
+    );
+    const rows = (await response.json()) as SiteSettings[];
+
+    return rows[0] || { force_anonymous: false };
+  } catch (error) {
+    console.error("Failed to load site settings:", error);
+    return { force_anonymous: false };
+  }
+}
+
+export async function updateForceAnonymous(forceAnonymous: boolean) {
+  await requestSupabase("/rest/v1/site_settings", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Prefer: "resolution=merge-duplicates,return=minimal",
+    },
+    body: JSON.stringify({
+      id: 1,
+      force_anonymous: forceAnonymous,
+    }),
+  });
+}
+
 export async function getPublicMessages() {
   const response = await requestSupabase(
     "/rest/v1/anonymous_messages?select=id,nickname,content,is_visible,created_at&is_visible=eq.true&order=created_at.desc&limit=100",
@@ -89,7 +124,7 @@ export async function getPublicMessages() {
 }
 
 export async function getPublicMessagesWithComments() {
-  const messages = await getPublicMessages();
+  const [messages, settings] = await Promise.all([getPublicMessages(), getSiteSettings()]);
 
   if (messages.length === 0) {
     return [] as AnonymousMessageWithComments[];
@@ -104,9 +139,22 @@ export async function getPublicMessagesWithComments() {
   );
   const comments = (await response.json()) as AnonymousComment[];
 
-  return messages.map((message) => ({
+  const messagesWithComments = messages.map((message) => ({
     ...message,
     comments: comments.filter((comment) => comment.message_id === message.id),
+  }));
+
+  if (!settings.force_anonymous) {
+    return messagesWithComments;
+  }
+
+  return messagesWithComments.map((message) => ({
+    ...message,
+    nickname: null,
+    comments: message.comments.map((comment) => ({
+      ...comment,
+      nickname: null,
+    })),
   }));
 }
 

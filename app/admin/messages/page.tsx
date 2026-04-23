@@ -1,6 +1,10 @@
-import { updateCommentVisibility, updateMessageVisibility } from "../actions";
+import { updateAnonymousMode, updateCommentVisibility, updateMessageVisibility } from "../actions";
 import { VisibilityButton } from "./visibility-button";
-import { getAllMessagesWithComments, isDatabaseConfigured } from "../../lib/anonymous-messages";
+import {
+  getAllMessagesWithComments,
+  getSiteSettings,
+  isDatabaseConfigured,
+} from "../../lib/anonymous-messages";
 
 const text = {
   adminDisabled: "\u540e\u53f0\u672a\u542f\u7528",
@@ -19,6 +23,11 @@ const text = {
   hide: "\u9690\u85cf",
   show: "\u6062\u590d",
   comments: "\u8bc4\u8bba",
+  anonymousMode: "\u5168\u7ad9\u533f\u540d\u6a21\u5f0f",
+  anonymousModeOn: "\u5df2\u5f00\u542f\uff1a\u9996\u9875\u4e0d\u663e\u793a\u4efb\u4f55\u6635\u79f0",
+  anonymousModeOff: "\u5df2\u5173\u95ed\uff1a\u9996\u9875\u6b63\u5e38\u663e\u793a\u6635\u79f0",
+  enableAnonymous: "\u5f00\u542f\u5168\u7ad9\u533f\u540d",
+  disableAnonymous: "\u5173\u95ed\u5168\u7ad9\u533f\u540d",
 };
 
 type MessagesPageProps = {
@@ -65,7 +74,7 @@ export default async function MessagesPage({ searchParams }: MessagesPageProps) 
     );
   }
 
-  const messages = await getAllMessagesWithComments();
+  const [messages, settings] = await Promise.all([getAllMessagesWithComments(), getSiteSettings()]);
 
   return (
     <main className="page-shell">
@@ -73,6 +82,22 @@ export default async function MessagesPage({ searchParams }: MessagesPageProps) 
         <div className="section-heading">
           <p className="section-kicker">{text.admin}</p>
           <h1 className="admin-title">{text.title}</h1>
+        </div>
+
+        <div className="admin-setting-panel">
+          <div>
+            <h2>{text.anonymousMode}</h2>
+            <p>{settings.force_anonymous ? text.anonymousModeOn : text.anonymousModeOff}</p>
+          </div>
+          <VisibilityButton
+            action={async () => {
+              "use server";
+              await updateAnonymousMode(!settings.force_anonymous, params.token || "");
+            }}
+            hiddenLabel={text.disableAnonymous}
+            isVisible={settings.force_anonymous}
+            visibleLabel={text.enableAnonymous}
+          />
         </div>
 
         <div className="message-list">

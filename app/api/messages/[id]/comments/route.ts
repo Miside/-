@@ -1,4 +1,5 @@
 import { isDatabaseConfigured, saveAnonymousComment } from "../../../../lib/anonymous-messages";
+import { isLikelyChinesePersonalName } from "../../../../lib/name-safety";
 
 const messages = {
   badJson: "\u63d0\u4ea4\u5185\u5bb9\u683c\u5f0f\u4e0d\u6b63\u786e\u3002",
@@ -6,6 +7,7 @@ const messages = {
   emptyContent: "\u8bf7\u5148\u5199\u4e0b\u4f60\u7684\u8bc4\u8bba\u3002",
   contentTooLong: "\u8bc4\u8bba\u6700\u591a 300 \u4e2a\u5b57\u3002",
   nicknameTooLong: "\u6635\u79f0\u6700\u591a 24 \u4e2a\u5b57\u3002",
+  nicknameLooksLikeName: "\u6635\u79f0\u4e0d\u80fd\u4f7f\u7528\u50cf\u4e2d\u6587\u4eba\u540d\u7684\u5185\u5bb9\uff0c\u8bf7\u6362\u6210\u7f51\u540d\u6216\u7559\u7a7a\u3002",
   databaseMissing: "\u6570\u636e\u5e93\u8fd8\u6ca1\u914d\u7f6e\uff0c\u6682\u65f6\u4e0d\u80fd\u4fdd\u5b58\u8bc4\u8bba\u3002",
   saveFailed: "\u8bc4\u8bba\u4fdd\u5b58\u5931\u8d25\uff0c\u8bf7\u7a0d\u540e\u518d\u8bd5\u3002",
   saved: "\u8bc4\u8bba\u53d1\u5e03\u6210\u529f\u3002",
@@ -60,6 +62,10 @@ export async function POST(request: Request, context: RouteContext) {
 
   if (nickname && nickname.length > 24) {
     return Response.json({ message: messages.nicknameTooLong }, { status: 400 });
+  }
+
+  if (isLikelyChinesePersonalName(nickname)) {
+    return Response.json({ message: messages.nicknameLooksLikeName }, { status: 400 });
   }
 
   if (!isDatabaseConfigured()) {

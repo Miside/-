@@ -394,6 +394,29 @@ code {
   opacity: 0.7;
 }
 
+.admin-setting-panel {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: center;
+  margin-bottom: 18px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.68);
+}
+
+.admin-setting-panel h2 {
+  margin: 0 0 6px;
+  font-size: 1.1rem;
+}
+
+.admin-setting-panel p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
 .admin-comments {
   display: grid;
   gap: 10px;

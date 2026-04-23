@@ -1,31 +1,31 @@
 # Anonymous Message Wall
 
-这是一个基于 `Next.js + Supabase + Vercel` 的匿名留言墙网站。
+Next.js + Supabase + Vercel anonymous message wall.
 
-功能：
+Features:
 
-- 首页公开展示匿名留言
-- 访客无需登录即可发布留言
-- 昵称可选，不填时显示“匿名用户”
-- 后端接口保存留言到 Supabase
-- 后台页面查看最近留言
+- Public anonymous messages
+- Anonymous comments under each message
+- Admin hide/restore controls
+- Admin global force-anonymous switch
+- Frontend auto-refreshes messages every 2 seconds
 
-## 本地启动
+## Local Development
 
 ```bash
 npm install
 npm run dev
 ```
 
-启动后打开：
+Open:
 
 ```text
 http://localhost:3000
 ```
 
-## Supabase 数据表
+## Supabase SQL
 
-在 Supabase 的 SQL Editor 里执行：
+Run this in Supabase SQL Editor:
 
 ```sql
 create table if not exists public.anonymous_messages (
@@ -48,53 +48,40 @@ create table if not exists public.anonymous_comments (
 );
 
 alter table public.anonymous_comments enable row level security;
+
+create table if not exists public.site_settings (
+  id integer primary key default 1,
+  force_anonymous boolean not null default false,
+  updated_at timestamptz not null default now()
+);
+
+insert into public.site_settings (id, force_anonymous)
+values (1, false)
+on conflict (id) do nothing;
+
+alter table public.site_settings enable row level security;
 ```
 
-不需要添加公开访问策略。网站后端会使用服务端环境变量访问数据库。
-
-## Vercel 环境变量
-
-在 Vercel 项目里添加：
+## Vercel Environment Variables
 
 ```text
-SUPABASE_URL=你的 Supabase Project URL
-SUPABASE_SERVICE_ROLE_KEY=你的 Supabase service API key
-ADMIN_TOKEN=你自己设置的后台口令
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your Supabase service API key
+ADMIN_TOKEN=your admin token
 ```
 
-保存后重新部署。
+Redeploy after changing environment variables.
 
-## 地址
+## URLs
 
-公开留言墙：
+Public wall:
 
 ```text
 /
 ```
 
-留言提交和读取接口：
+Admin:
 
 ```text
-/api/messages
+/admin/messages?token=your-admin-token
 ```
-
-评论提交接口：
-
-```text
-/api/messages/:id/comments
-```
-
-后台查看：
-
-```text
-/admin/messages?token=你的后台口令
-```
-
-## 常改文件
-
-- `app/page.tsx`: 首页
-- `app/message-wall.tsx`: 留言墙和发布表单
-- `app/api/messages/route.ts`: 留言 API
-- `app/admin/messages/page.tsx`: 后台页面
-- `app/lib/anonymous-messages.ts`: Supabase 访问封装
-- `app/globals.css`: 全局样式
