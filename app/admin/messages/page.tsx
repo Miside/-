@@ -47,6 +47,7 @@ const text = {
 
 type MessagesPageProps = {
   searchParams: Promise<{
+    error?: string;
     token?: string;
   }>;
 };
@@ -99,6 +100,8 @@ export default async function MessagesPage({ searchParams }: MessagesPageProps) 
           <p className="section-kicker">{text.admin}</p>
           <h1 className="admin-title">{text.title}</h1>
         </div>
+
+        {params.error ? <p className="form-message is-error">{params.error}</p> : null}
 
         <div className="admin-setting-panel">
           <div>

@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { NextResponse } from "next/server";
 import {
   setCommentVisibility,
   setMessageVisibility,
@@ -38,40 +39,64 @@ function redirectToAdmin(token: string) {
   redirect(`/admin/messages?token=${encodeURIComponent(token)}`);
 }
 
+function redirectToAdminWithError(token: string, message: string) {
+  redirect(
+    `/admin/messages?token=${encodeURIComponent(token)}&error=${encodeURIComponent(message)}`,
+  );
+}
+
+export async function GET() {
+  return NextResponse.json(
+    {
+      message: "This endpoint only handles admin button POST requests. Open /admin/messages instead.",
+    },
+    { status: 405 },
+  );
+}
+
 export async function POST(request: Request) {
   const formData = await request.formData();
   const token = formData.get("token");
   const actionType = formData.get("actionType") as AdminActionType | null;
   const value = parseBoolean(formData.get("value"));
 
-  assertAdmin(token);
+  try {
+    assertAdmin(token);
+  } catch {
+    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+  }
 
   const tokenString = String(token);
 
-  if (actionType === "anonymous-mode") {
-    await updateForceAnonymous(value);
-    redirectToAdmin(tokenString);
-  }
+  try {
+    if (actionType === "anonymous-mode") {
+      await updateForceAnonymous(value);
+      redirectToAdmin(tokenString);
+    }
 
-  if (actionType === "blocked-keywords") {
-    await updateBlockedKeywords(String(formData.get("blockedKeywords") || ""));
-    redirectToAdmin(tokenString);
-  }
+    if (actionType === "blocked-keywords") {
+      await updateBlockedKeywords(String(formData.get("blockedKeywords") || ""));
+      redirectToAdmin(tokenString);
+    }
 
-  if (actionType === "maintenance") {
-    await updateMaintenanceMode(value);
-    redirectToAdmin(tokenString);
-  }
+    if (actionType === "maintenance") {
+      await updateMaintenanceMode(value);
+      redirectToAdmin(tokenString);
+    }
 
-  if (actionType === "message-visibility") {
-    await setMessageVisibility(parseId(formData.get("id")), value);
-    redirectToAdmin(tokenString);
-  }
+    if (actionType === "message-visibility") {
+      await setMessageVisibility(parseId(formData.get("id")), value);
+      redirectToAdmin(tokenString);
+    }
 
-  if (actionType === "comment-visibility") {
-    await setCommentVisibility(parseId(formData.get("id")), value);
-    redirectToAdmin(tokenString);
-  }
+    if (actionType === "comment-visibility") {
+      await setCommentVisibility(parseId(formData.get("id")), value);
+      redirectToAdmin(tokenString);
+    }
 
-  throw new Error("Invalid admin action");
+    redirectToAdminWithError(tokenString, "Invalid admin action.");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Admin action failed.";
+    redirectToAdminWithError(tokenString, message);
+  }
 }
